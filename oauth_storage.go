@@ -31,6 +31,6 @@ type ClientLister interface {
 	GetClient(id string) (osin.Client, error)
 }
 
-func (s Suite) RunOAuthTests(t *testing.T) {
+func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 	t.Skipf("%s", errNotImplemented)
 }

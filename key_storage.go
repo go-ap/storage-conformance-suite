@@ -16,8 +16,8 @@ type KeyStorage interface {
 
 var privateKey, _ = rsa.GenerateKey(rand.Reader, 2048)
 
-func initKeyStorage(s Suite) error {
-	keyStorage, ok := s.storage.(KeyStorage)
+func initKeyStorage(storage ActivityPubStorage) error {
+	keyStorage, ok := storage.(KeyStorage)
 	if ok {
 		pk, err := keyStorage.SaveKey(root.ID, privateKey)
 		if err != nil {
@@ -28,8 +28,8 @@ func initKeyStorage(s Suite) error {
 	return nil
 }
 
-func (s Suite) RunKeyTests(t *testing.T) {
-	if err := initKeyStorage(s); err != nil {
+func RunKeyTests(t *testing.T, storage ActivityPubStorage) {
+	if err := initKeyStorage(storage); err != nil {
 		t.Fatalf("unable to init Key pair test suite: %s", err)
 	}
 	t.Skipf("%s", errNotImplemented)

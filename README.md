@@ -17,8 +17,7 @@ import (
 var storageInit func(*testing.T) conformance.ActivityPubStorage
 
 func Test_Conformance(t *testing.T) {
-    var whichTests conformance.TestType = conformance.TestActivityPub | conformance.TestKey
-
-    conformance.Init(storageInit(t), whichTests).Run(t)
+    suite := conformance.Suite(conformance.TestActivityPub, conformance.TestKey)
+    suite.Run(t, storageInit(t))
 }
 ```

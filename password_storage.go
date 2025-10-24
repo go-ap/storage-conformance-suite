@@ -13,8 +13,8 @@ type PasswordStorage interface {
 
 var rootPw = []byte("notSoSecretP4ssw0rd")
 
-func initPasswordStorage(s Suite) error {
-	pwStorage, ok := s.storage.(PasswordStorage)
+func initPasswordStorage(storage ActivityPubStorage) error {
+	pwStorage, ok := storage.(PasswordStorage)
 	if ok {
 		err := pwStorage.PasswordSet(root.ID, rootPw)
 		if err != nil {
@@ -24,8 +24,8 @@ func initPasswordStorage(s Suite) error {
 	return nil
 }
 
-func (s Suite) RunPasswordTests(t *testing.T) {
-	if err := initPasswordStorage(s); err != nil {
+func RunPasswordTests(t *testing.T, storage ActivityPubStorage) {
+	if err := initPasswordStorage(storage); err != nil {
 		t.Errorf("unable to init Password test suite: %s", err)
 		return
 	}

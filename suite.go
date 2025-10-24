@@ -2,11 +2,6 @@ package conformance
 
 import "testing"
 
-type Suite struct {
-	types   TestType
-	storage ActivityPubStorage
-}
-
 type TestType uint16
 
 const (
@@ -19,28 +14,32 @@ const (
 	TestNone = 0
 )
 
-func Init(storage ActivityPubStorage, tests TestType) Suite {
-	return Suite{storage: storage, types: tests}
+func Suite(tt ...TestType) TestType {
+	var result TestType = TestNone
+	for _, t := range tt {
+		result = result | t
+	}
+	return result
 }
 
-func (s Suite) RunTests(t *testing.T) {
-	if s.types == TestNone {
+func (tt TestType) Run(t *testing.T, storage ActivityPubStorage) {
+	if tt == TestNone {
 		t.Logf("No tests to run")
 		return
 	}
-	if s.types&TestActivityPub == TestActivityPub {
-		s.RunActivityPubTests(t)
+	if tt&TestActivityPub == TestActivityPub {
+		RunActivityPubTests(t, storage)
 	}
-	if s.types&TestKey == TestKey {
-		s.RunKeyTests(t)
+	if tt&TestKey == TestKey {
+		RunKeyTests(t, storage)
 	}
-	if s.types&TestMetadata == TestMetadata {
-		s.RunMetadataTests(t)
+	if tt&TestMetadata == TestMetadata {
+		RunMetadataTests(t, storage)
 	}
-	if s.types&TestPassword == TestPassword {
-		s.RunPasswordTests(t)
+	if tt&TestPassword == TestPassword {
+		RunPasswordTests(t, storage)
 	}
-	if s.types&TestOAuth == TestOAuth {
-		s.RunOAuthTests(t)
+	if tt&TestOAuth == TestOAuth {
+		RunOAuthTests(t, storage)
 	}
 }

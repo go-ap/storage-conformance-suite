@@ -46,24 +46,24 @@ var (
 	}
 )
 
-func initActivityPub(s Suite) error {
-	if s.storage == nil {
+func initActivityPub(storage ActivityPubStorage) error {
+	if storage == nil {
 		return errNilStorage
 	}
-	if _, err := s.storage.Save(root); err != nil {
+	if _, err := storage.Save(root); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s Suite) RunActivityPubTests(t *testing.T) {
-	if err := initActivityPub(s); err != nil {
+func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
+	if err := initActivityPub(storage); err != nil {
 		t.Fatalf("unable to init ActivityPub test suite: %s", err)
 	}
 
 	// Load root item
 	t.Run("Load Root item", func(t *testing.T) {
-		it, err := s.storage.Load(rootID)
+		it, err := storage.Load(rootID)
 		if err != nil {
 			t.Errorf("unable to load root item: %s", err)
 		}
