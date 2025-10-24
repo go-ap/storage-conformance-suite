@@ -1,4 +1,4 @@
-module conformance
+module github.com/go-ap/storage-conformance-suite
 
 go 1.25
 
