@@ -11,7 +11,7 @@ type PasswordStorage interface {
 	PasswordCheck(it vocab.IRI, pw []byte) error
 }
 
-func initPasswordStorage(s *Suite) error {
+func initPasswordStorage(s Suite) error {
 	pwStorage, ok := s.storage.(PasswordStorage)
 	if ok {
 		err := pwStorage.PasswordSet(root.ID, rootPw)
@@ -22,7 +22,7 @@ func initPasswordStorage(s *Suite) error {
 	return nil
 }
 
-func (s *Suite) RunPasswordTests(t *testing.T) {
+func (s Suite) RunPasswordTests(t *testing.T) {
 	if err := initPasswordStorage(s); err != nil {
 		t.Errorf("unable to init Password test suite: %s", err)
 		return

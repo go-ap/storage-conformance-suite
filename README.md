@@ -2,7 +2,7 @@
 
 ### Usage
 
-If you have implemented a backend for the GoActivityPub library, this here you have the test suite to verify that it will behave predictably for the other packages.
+If you have implemented a backend for the [GoActivityPub library](https://github.com/go-ap), this here you have the test suite to verify that it will behave predictably for the other packages.
 
 ```go
 import (
@@ -11,11 +11,14 @@ import (
     conformance "github.com/go-ap/storage-conformance-suite"
 )
 
-var initStorage func() conformance.ActivityPubStorage
-
+// TODO
+// write your own initializing function that returns a ready to use instance
+// of calls t.Fatal if errors are encountered.
+var storageInit func(*testing.T) conformance.ActivityPubStorage
 
 func Test_Conformance(t *testing.T) {
-    suite := conformance.Init(initStorage(), conformance.TestActivityPub)
-    suite.Run(t)
+    var whichTests conformance.TestType = conformance.TestActivityPub | conformance.TestKey
+
+    conformance.Init(storageInit(t), whichTests).Run(t)
 }
 ```

@@ -23,7 +23,7 @@ func Init(storage ActivityPubStorage, tests TestType) Suite {
 	return Suite{storage: storage, types: tests}
 }
 
-func (s *Suite) RunTests(t *testing.T) {
+func (s Suite) RunTests(t *testing.T) {
 	if s.types == TestNone {
 		t.Logf("No tests to run")
 		return

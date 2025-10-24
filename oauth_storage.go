@@ -31,6 +31,6 @@ type ClientLister interface {
 	GetClient(id string) (osin.Client, error)
 }
 
-func (s *Suite) RunOAuthTests(t *testing.T) {
+func (s Suite) RunOAuthTests(t *testing.T) {
 	t.Errorf("%s", errNotImplemented)
 }

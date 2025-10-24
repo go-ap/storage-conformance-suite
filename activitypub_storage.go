@@ -7,7 +7,7 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/filters"
-	"github.com/stretchr/testify/assert"
+	"github.com/google/go-cmp/cmp"
 )
 
 type ActivityPubStorage interface {
@@ -50,7 +50,7 @@ var (
 	privateKey crypto.PrivateKey = nil
 )
 
-func initActivityPub(s *Suite) error {
+func initActivityPub(s Suite) error {
 	if s.storage == nil {
 		return errNilStorage
 	}
@@ -60,10 +60,9 @@ func initActivityPub(s *Suite) error {
 	return nil
 }
 
-func (s *Suite) RunActivityPubTests(t *testing.T) {
+func (s Suite) RunActivityPubTests(t *testing.T) {
 	if err := initActivityPub(s); err != nil {
-		t.Errorf("unable to init ActivityPub test suite: %s", err)
-		return
+		t.Fatalf("unable to init ActivityPub test suite: %s", err)
 	}
 
 	// Load root item
@@ -72,13 +71,15 @@ func (s *Suite) RunActivityPubTests(t *testing.T) {
 		if err != nil {
 			t.Errorf("unable to load root item: %s", err)
 		}
-		assert.Equal(t, root, it, "invalid root actor loaded from storage")
+		if !cmp.Equal(root, it) {
+			t.Errorf("invalid root actor loaded from storage %s", cmp.Diff(root, it))
+		}
 	})
 
 	// Save items
 	t.Run("Save items", func(t *testing.T) {
-		t.Errorf("%s", errNotImplemented)
+		t.Fatalf("%s", errNotImplemented)
 	})
 
-	t.Errorf("%s", errNotImplemented)
+	t.Fatalf("%s", errNotImplemented)
 }

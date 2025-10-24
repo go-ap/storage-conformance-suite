@@ -11,6 +11,6 @@ type MetadataStorage interface {
 	SaveMetadata(iri vocab.IRI, m any) error
 }
 
-func (s *Suite) RunMetadataTests(t *testing.T) {
+func (s Suite) RunMetadataTests(t *testing.T) {
 	t.Errorf("%s", errNotImplemented)
 }

@@ -12,7 +12,7 @@ type KeyStorage interface {
 	SaveKey(iri vocab.IRI, key crypto.PrivateKey) (*vocab.PublicKey, error)
 }
 
-func initKeyStorage(s *Suite) error {
+func initKeyStorage(s Suite) error {
 	keyStorage, ok := s.storage.(KeyStorage)
 	if ok {
 		pk, err := keyStorage.SaveKey(root.ID, privateKey)
@@ -24,10 +24,9 @@ func initKeyStorage(s *Suite) error {
 	return nil
 }
 
-func (s *Suite) RunKeyTests(t *testing.T) {
+func (s Suite) RunKeyTests(t *testing.T) {
 	if err := initKeyStorage(s); err != nil {
-		t.Errorf("unable to init Key pair test suite: %s", err)
-		return
+		t.Fatalf("unable to init Key pair test suite: %s", err)
 	}
 	t.Errorf("%s", errNotImplemented)
 }
