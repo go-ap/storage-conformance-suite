@@ -21,6 +21,8 @@ type ActivityPubStorage interface {
 }
 
 var (
+	defaultTime = time.Date(1999, time.April, 1, 6, 6, 6, 0, time.UTC)
+
 	rootID = vocab.IRI("https://example.com/~root")
 
 	rootPw = []byte("notSoSecretP4ssw0rd")
@@ -30,7 +32,7 @@ var (
 	root = &vocab.Actor{
 		ID:                rootID,
 		Type:              vocab.PersonType,
-		Published:         time.Now(),
+		Published:         defaultTime,
 		Name:              vocab.DefaultNaturalLanguage("Rooty McRootface"),
 		Summary:           vocab.DefaultNaturalLanguage("The base actor for the conformance test suite"),
 		Content:           vocab.DefaultNaturalLanguage("<p>The base actor for the conformance test suite</p>"),
@@ -44,7 +46,6 @@ var (
 		Followers:         vocab.Followers.IRI(rootID),
 		Liked:             vocab.Liked.IRI(rootID),
 		PreferredUsername: vocab.DefaultNaturalLanguage("root"),
-		PublicKey:         vocab.PublicKey{},
 	}
 
 	privateKey crypto.PrivateKey = nil
