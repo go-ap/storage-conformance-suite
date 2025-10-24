@@ -32,5 +32,5 @@ type ClientLister interface {
 }
 
 func (s Suite) RunOAuthTests(t *testing.T) {
-	t.Errorf("%s", errNotImplemented)
+	t.Skipf("%s", errNotImplemented)
 }

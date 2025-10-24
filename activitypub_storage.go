@@ -1,7 +1,6 @@
 package conformance
 
 import (
-	"crypto"
 	"testing"
 	"time"
 
@@ -25,8 +24,6 @@ var (
 
 	rootID = vocab.IRI("https://example.com/~root")
 
-	rootPw = []byte("notSoSecretP4ssw0rd")
-
 	publicAudience = vocab.ItemCollection{vocab.PublicNS}
 
 	root = &vocab.Actor{
@@ -47,8 +44,6 @@ var (
 		Liked:             vocab.Liked.IRI(rootID),
 		PreferredUsername: vocab.DefaultNaturalLanguage("root"),
 	}
-
-	privateKey crypto.PrivateKey = nil
 )
 
 func initActivityPub(s Suite) error {
@@ -79,8 +74,6 @@ func (s Suite) RunActivityPubTests(t *testing.T) {
 
 	// Save items
 	t.Run("Save items", func(t *testing.T) {
-		t.Fatalf("%s", errNotImplemented)
+		t.Skipf("%s", errNotImplemented)
 	})
-
-	t.Fatalf("%s", errNotImplemented)
 }

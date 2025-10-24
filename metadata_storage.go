@@ -12,5 +12,5 @@ type MetadataStorage interface {
 }
 
 func (s Suite) RunMetadataTests(t *testing.T) {
-	t.Errorf("%s", errNotImplemented)
+	t.Skipf("%s", errNotImplemented)
 }

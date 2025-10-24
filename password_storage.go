@@ -11,6 +11,8 @@ type PasswordStorage interface {
 	PasswordCheck(it vocab.IRI, pw []byte) error
 }
 
+var rootPw = []byte("notSoSecretP4ssw0rd")
+
 func initPasswordStorage(s Suite) error {
 	pwStorage, ok := s.storage.(PasswordStorage)
 	if ok {
