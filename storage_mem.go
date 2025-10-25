@@ -128,8 +128,20 @@ func (ms *memStorage) Create(col vocab.CollectionInterface) (vocab.CollectionInt
 	return col, nil
 }
 
+func (ms *memStorage) loadCol(colIRI vocab.IRI) (vocab.CollectionInterface, error) {
+	it, ok := ms.Map.Load(colIRI)
+	if !ok {
+		return nil, errors.Newf("unable to load collection %s", colIRI)
+	}
+	col, ok := it.(vocab.CollectionInterface)
+	if !ok {
+		return nil, errors.Newf("invalid collection type %T %s", it, colIRI)
+	}
+	return col, nil
+}
+
 func (ms *memStorage) AddTo(colIRI vocab.IRI, it vocab.Item) error {
-	col, err := ms.Load(colIRI)
+	col, err := ms.loadCol(colIRI)
 	if err != nil {
 		return err
 	}
@@ -158,7 +170,7 @@ func (ms *memStorage) AddTo(colIRI vocab.IRI, it vocab.Item) error {
 }
 
 func (ms *memStorage) RemoveFrom(colIRI vocab.IRI, it vocab.Item) error {
-	col, err := ms.Load(colIRI)
+	col, err := ms.loadCol(colIRI)
 	if err != nil {
 		return err
 	}
@@ -175,6 +187,7 @@ func (ms *memStorage) RemoveFrom(colIRI vocab.IRI, it vocab.Item) error {
 
 	// NOTE(marius): decrease total items count
 	err = vocab.OnCollection(col, func(col *vocab.Collection) error {
+		col.Items.Remove(it)
 		if col.TotalItems > 0 {
 			col.TotalItems -= 1
 		}

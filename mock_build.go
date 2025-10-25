@@ -7,6 +7,7 @@ import (
 	"mime"
 	"net/http"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -121,16 +122,27 @@ func getObjectTypes(data []byte) (vocab.ActivityVocabularyType, vocab.MimeType) 
 		}
 	case "image/svg+xml":
 		objectType = vocab.DocumentType
-	case "video/webm":
-		fallthrough
-	case "video/mp4":
+	case "video/webm", "video/mp4":
 		objectType = vocab.VideoType
 	case "audio/mp3":
 		objectType = vocab.AudioType
-	case "image/png":
-		fallthrough
-	case "image/jpg":
+	case "image/png", "image/jpg":
 		objectType = vocab.ImageType
 	}
 	return objectType, vocab.MimeType(contentType)
+}
+
+func sortItemCollectionByID(items vocab.ItemCollection) {
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].GetLink().String() <= items[j].GetLink().String()
+	})
+}
+
+func getRandomItemCollection(count int) vocab.ItemCollection {
+	items := make(vocab.ItemCollection, 0, count)
+	for range count {
+		items = append(items, RandomObject(root))
+	}
+	sortItemCollectionByID(items)
+	return items
 }

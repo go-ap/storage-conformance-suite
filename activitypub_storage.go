@@ -1,10 +1,12 @@
 package conformance
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/errors"
 	"github.com/go-ap/filters"
 	"github.com/google/go-cmp/cmp"
 )
@@ -72,10 +74,9 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 		}
 	})
 
-	// Save items
-	t.Run("Save items", func(t *testing.T) {
-		t.Run("save random object", func(t *testing.T) {
-			ob := RandomObject(root)
+	randomObjects := getRandomItemCollection(20)
+	t.Run(fmt.Sprintf("save %d random objects", len(randomObjects)), func(t *testing.T) {
+		for _, ob := range randomObjects {
 			savedIt, err := storage.Save(ob)
 			if err != nil {
 				t.Errorf("unable to save object: %s", err)
@@ -90,45 +91,92 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 			if !cmp.Equal(ob, loadIt) {
 				t.Errorf("invalid object returned from loading %s: %s", ob.GetLink(), cmp.Diff(ob, loadIt))
 			}
-		})
-		t.Run("create collection", func(t *testing.T) {
-			col := RandomCollection(root)
-			savedIt, err := storage.Create(col)
+		}
+	})
+	t.Run(fmt.Sprintf("delete %d random objects", len(randomObjects)), func(t *testing.T) {
+		for _, ob := range randomObjects {
+			err := storage.Delete(ob)
 			if err != nil {
-				t.Errorf("unable to save collection: %s", err)
+				t.Errorf("unable to save object: %s", err)
 			}
-			if !cmp.Equal(col, savedIt) {
-				t.Errorf("invalid collection returned from saving %s", cmp.Diff(col, savedIt))
+			loadIt, err := storage.Load(ob.GetLink())
+			if err != nil && !errors.IsNotFound(err) {
+				t.Errorf("unable to load object %s: %s", ob.GetLink(), err)
 			}
-			loadIt, err := storage.Load(savedIt.GetLink())
+			if loadIt != nil {
+				t.Errorf("invalid object returned from loading %s: it should have been empty", ob.GetLink())
+			}
+		}
+	})
+
+	col := RandomCollection(root)
+	colIRI := col.GetLink()
+	t.Run("create collection", func(t *testing.T) {
+		savedIt, err := storage.Create(col)
+		if err != nil {
+			t.Errorf("unable to save collection: %s", err)
+		}
+		if !cmp.Equal(col, savedIt) {
+			t.Errorf("invalid collection returned from saving %s", cmp.Diff(col, savedIt))
+		}
+		loadIt, err := storage.Load(colIRI)
+		if err != nil {
+			t.Errorf("unable to load collection %s: %s", colIRI, err)
+		}
+		if !cmp.Equal(col, loadIt) {
+			t.Errorf("invalid collection returned from loading %s: %s", colIRI, cmp.Diff(col, loadIt))
+		}
+
+		// NOTE(marius): generate random Item Collection
+		randomObjects := getRandomItemCollection(32)
+		t.Run(fmt.Sprintf("add %d items to collection", randomObjects.Count()), func(t *testing.T) {
+			for i, ob := range randomObjects {
+				if err = storage.AddTo(colIRI, ob); err != nil {
+					t.Errorf("unable to add object to collection at pos %d: %s", i, err)
+				}
+			}
+			loadedIt, err := storage.Load(colIRI)
 			if err != nil {
-				t.Errorf("unable to load collection %s: %s", col.GetLink(), err)
+				t.Errorf("unable to load collection %s: %s", colIRI, err)
 			}
-			if !cmp.Equal(col, loadIt) {
-				t.Errorf("invalid collection returned from loading %s: %s", col.GetLink(), cmp.Diff(col, loadIt))
-			}
-			t.Run("add items collection", func(t *testing.T) {
-				ob := RandomObject(root)
-				err := storage.AddTo(col.GetLink(), ob)
-				if err != nil {
-					t.Errorf("unable to add object to collection: %s", err)
+			err = vocab.OnCollectionIntf(loadedIt, func(col vocab.CollectionInterface) error {
+				savedItems := col.Collection()
+				if len(savedItems) != len(randomObjects) {
+					t.Fatalf("invalid collection item counts returned from loading %d, expected %d", len(savedItems), len(randomObjects))
 				}
-				loadedIt, err := storage.Load(col.GetLink())
-				if err != nil {
-					t.Errorf("unable to load collection %s: %s", col.GetLink(), err)
-				}
-				err = vocab.OnCollectionIntf(loadedIt, func(col vocab.CollectionInterface) error {
-					for pos, it := range col.Collection() {
-						if !cmp.Equal(ob, it) {
-							t.Errorf("invalid collection item returned from loading at pos %d %s: %s", pos, col.GetLink(), cmp.Diff(ob, it))
-						}
+				sortItemCollectionByID(savedItems)
+				for i, it := range randomObjects {
+					if !cmp.Equal(it, savedItems[i]) {
+						t.Errorf("invalid item at pos %d, unable: %s", i, cmp.Diff(it, savedItems))
 					}
-					return nil
-				})
-				if err != nil {
-					t.Errorf("loaded object wasn't a collection %s: %s", col.GetLink(), err)
 				}
+				return nil
 			})
+			if err != nil {
+				t.Errorf("loaded object wasn't a collection %s: %s", colIRI, err)
+			}
+		})
+
+		t.Run(fmt.Sprintf("remove %d items from collection", randomObjects.Count()), func(t *testing.T) {
+			for i, ob := range randomObjects {
+				if err = storage.RemoveFrom(colIRI, ob); err != nil {
+					t.Errorf("unable to remove object from collection at pos %d: %s", i, err)
+				}
+			}
+			loadedIt, err := storage.Load(colIRI)
+			if err != nil {
+				t.Errorf("unable to load collection %s: %s", colIRI, err)
+			}
+			err = vocab.OnCollectionIntf(loadedIt, func(col vocab.CollectionInterface) error {
+				if remainingItems := col.Collection(); len(remainingItems) != 0 {
+					t.Errorf("invalid collection returned from loading it has %d items: expected empty", len(remainingItems))
+					t.Logf("%s", cmp.Diff(vocab.ItemCollection{}, remainingItems))
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("loaded object wasn't a collection %s: %s", colIRI, err)
+			}
 		})
 	})
 }

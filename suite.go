@@ -48,6 +48,8 @@ func (tt TestType) Run(t *testing.T, storage ActivityPubStorage) {
 	maybeClose := maybeOpen(t, storage)
 	defer maybeClose()
 
+	t.Helper()
+
 	if tt == TestNone {
 		t.Logf("No tests to run")
 		return
