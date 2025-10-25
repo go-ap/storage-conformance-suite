@@ -12,6 +12,8 @@ const (
 	TestOAuth
 
 	TestNone = 0
+
+	TestsFull = TestActivityPub | TestKey | TestPassword | TestMetadata | TestOAuth
 )
 
 func Suite(tt ...TestType) TestType {

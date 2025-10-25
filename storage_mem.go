@@ -31,7 +31,7 @@ var errNotImplemented = errf("not implemented")
 var errNilStorage = errf("nil storage")
 
 type memStorage struct {
-	sync.Map
+	*sync.Map
 }
 
 func asBytes(s any) []byte {

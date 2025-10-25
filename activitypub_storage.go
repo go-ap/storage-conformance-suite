@@ -74,6 +74,22 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 
 	// Save items
 	t.Run("Save items", func(t *testing.T) {
-		t.Skipf("%s", errNotImplemented)
+		t.Run("save random object", func(t *testing.T) {
+			ob := RandomObject(nil)
+			it, err := storage.Save(ob)
+			if err != nil {
+				t.Errorf("unable to save object: %s", err)
+			}
+			if !cmp.Equal(ob, it) {
+				t.Errorf("invalid object returned from saving %s", cmp.Diff(ob, it))
+			}
+			it, err = storage.Load(it.GetLink())
+			if err != nil {
+				t.Errorf("unable to load object %s: %s", ob.GetLink(), err)
+			}
+			if !cmp.Equal(ob, it) {
+				t.Errorf("invalid object returned from loading %s: %s", ob.GetLink(), cmp.Diff(ob, it))
+			}
+		})
 	})
 }
