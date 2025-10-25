@@ -140,26 +140,28 @@ func (ms *memStorage) loadCol(colIRI vocab.IRI) (vocab.CollectionInterface, erro
 	return col, nil
 }
 
-func (ms *memStorage) AddTo(colIRI vocab.IRI, it vocab.Item) error {
+func (ms *memStorage) AddTo(colIRI vocab.IRI, items ...vocab.Item) error {
 	col, err := ms.loadCol(colIRI)
 	if err != nil {
 		return err
 	}
 
 	itemsKey := colIRI.GetLink().AddPath("items")
-	var items *sync.Map
-	_items, ok := ms.Map.Load(itemsKey)
+	var itMap *sync.Map
+	rawItems, ok := ms.Map.Load(itemsKey)
 	if !ok {
 		return errors.Newf("unable to find collection items map")
 	}
-	if items, ok = _items.(*sync.Map); !ok {
-		return errors.Newf("invalid items map %T", _items)
+	if itMap, ok = rawItems.(*sync.Map); !ok {
+		return errors.Newf("invalid items map %T", rawItems)
 	}
-	items.Store(it.GetLink(), it)
+	for _, it := range items {
+		itMap.Store(it.GetLink(), it)
+	}
 
 	// NOTE(marius): increase total items count
 	err = vocab.OnCollection(col, func(col *vocab.Collection) error {
-		col.TotalItems += 1
+		col.TotalItems += uint(len(items))
 		return nil
 	})
 	if err != nil {
@@ -169,28 +171,31 @@ func (ms *memStorage) AddTo(colIRI vocab.IRI, it vocab.Item) error {
 	return err
 }
 
-func (ms *memStorage) RemoveFrom(colIRI vocab.IRI, it vocab.Item) error {
+func (ms *memStorage) RemoveFrom(colIRI vocab.IRI, items ...vocab.Item) error {
 	col, err := ms.loadCol(colIRI)
 	if err != nil {
 		return err
 	}
 	itemsKey := colIRI.GetLink().AddPath("items")
-	var items *sync.Map
-	_items, ok := ms.Map.Load(itemsKey)
+	var itMap *sync.Map
+	rawMap, ok := ms.Map.Load(itemsKey)
 	if !ok {
 		return errors.Newf("unable to find collection items map")
 	}
-	if items, ok = _items.(*sync.Map); !ok {
-		return errors.Newf("invalid items map %T", _items)
+	if itMap, ok = rawMap.(*sync.Map); !ok {
+		return errors.Newf("invalid items map %T", rawMap)
 	}
-	items.Delete(it.GetLink())
+	for _, it := range items {
+		itMap.Delete(it.GetLink())
+	}
 
 	// NOTE(marius): decrease total items count
 	err = vocab.OnCollection(col, func(col *vocab.Collection) error {
-		col.Items.Remove(it)
-		if col.TotalItems > 0 {
-			col.TotalItems -= 1
+		if col.TotalItems < uint(len(items)) {
+			col.TotalItems = 0
 		}
+		col.Items.Remove(items...)
+		col.TotalItems -= uint(len(items))
 		return nil
 	})
 	if err != nil {

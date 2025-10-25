@@ -17,8 +17,8 @@ type ActivityPubStorage interface {
 	Delete(it vocab.Item) error
 
 	Create(col vocab.CollectionInterface) (vocab.CollectionInterface, error)
-	AddTo(colIRI vocab.IRI, it vocab.Item) error
-	RemoveFrom(colIRI vocab.IRI, it vocab.Item) error
+	AddTo(colIRI vocab.IRI, it ...vocab.Item) error
+	RemoveFrom(colIRI vocab.IRI, it ...vocab.Item) error
 }
 
 var (
