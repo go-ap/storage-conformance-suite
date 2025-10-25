@@ -24,7 +24,30 @@ func Suite(tt ...TestType) TestType {
 	return result
 }
 
+type Opener interface {
+	Open() error
+}
+
+type NilCloser interface {
+	Close()
+}
+
+func maybeOpen(t *testing.T, storage ActivityPubStorage) func() {
+	if opener, ok := storage.(Opener); ok {
+		err := opener.Open()
+		if err != nil {
+			t.Fatalf("Unable to open storage: %s", err)
+		}
+	}
+	if closer, ok := storage.(NilCloser); ok {
+		return closer.Close
+	}
+	return func() {}
+}
 func (tt TestType) Run(t *testing.T, storage ActivityPubStorage) {
+	maybeClose := maybeOpen(t, storage)
+	defer maybeClose()
+
 	if tt == TestNone {
 		t.Logf("No tests to run")
 		return
