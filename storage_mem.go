@@ -78,7 +78,7 @@ func (ms *memStorage) Create(col vocab.CollectionInterface) (vocab.CollectionInt
 }
 
 func (ms *memStorage) AddTo(colIRI vocab.IRI, it vocab.Item) error {
-	if _, ok := ms.Map.Load(colIRI); ok {
+	if _, ok := ms.Map.Load(colIRI); !ok {
 		return errors.NotFoundf("unable to find collection %s", colIRI)
 	}
 	itemsKey := colIRI.GetLink().AddPath("items")

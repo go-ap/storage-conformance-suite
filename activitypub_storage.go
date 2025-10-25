@@ -75,21 +75,60 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 	// Save items
 	t.Run("Save items", func(t *testing.T) {
 		t.Run("save random object", func(t *testing.T) {
-			ob := RandomObject(nil)
-			it, err := storage.Save(ob)
+			ob := RandomObject(root)
+			savedIt, err := storage.Save(ob)
 			if err != nil {
 				t.Errorf("unable to save object: %s", err)
 			}
-			if !cmp.Equal(ob, it) {
-				t.Errorf("invalid object returned from saving %s", cmp.Diff(ob, it))
+			if !cmp.Equal(ob, savedIt) {
+				t.Errorf("invalid object returned from saving %s", cmp.Diff(ob, savedIt))
 			}
-			it, err = storage.Load(it.GetLink())
+			loadIt, err := storage.Load(savedIt.GetLink())
 			if err != nil {
 				t.Errorf("unable to load object %s: %s", ob.GetLink(), err)
 			}
-			if !cmp.Equal(ob, it) {
-				t.Errorf("invalid object returned from loading %s: %s", ob.GetLink(), cmp.Diff(ob, it))
+			if !cmp.Equal(ob, loadIt) {
+				t.Errorf("invalid object returned from loading %s: %s", ob.GetLink(), cmp.Diff(ob, loadIt))
 			}
+		})
+		t.Run("create collection", func(t *testing.T) {
+			col := RandomCollection(root)
+			savedIt, err := storage.Create(col)
+			if err != nil {
+				t.Errorf("unable to save collection: %s", err)
+			}
+			if !cmp.Equal(col, savedIt) {
+				t.Errorf("invalid collection returned from saving %s", cmp.Diff(col, savedIt))
+			}
+			loadIt, err := storage.Load(savedIt.GetLink())
+			if err != nil {
+				t.Errorf("unable to load collection %s: %s", col.GetLink(), err)
+			}
+			if !cmp.Equal(col, loadIt) {
+				t.Errorf("invalid collection returned from loading %s: %s", col.GetLink(), cmp.Diff(col, loadIt))
+			}
+			t.Run("add items collection", func(t *testing.T) {
+				ob := RandomObject(root)
+				err := storage.AddTo(col.GetLink(), ob)
+				if err != nil {
+					t.Errorf("unable to add object to collection: %s", err)
+				}
+				loadedIt, err := storage.Load(col.GetLink())
+				if err != nil {
+					t.Errorf("unable to load collection %s: %s", col.GetLink(), err)
+				}
+				err = vocab.OnCollectionIntf(loadedIt, func(col vocab.CollectionInterface) error {
+					for pos, it := range col.Collection() {
+						if !cmp.Equal(ob, it) {
+							t.Errorf("invalid collection item returned from loading at pos %d %s: %s", pos, col.GetLink(), cmp.Diff(ob, it))
+						}
+					}
+					return nil
+				})
+				if err != nil {
+					t.Errorf("loaded object wasn't a collection %s: %s", col.GetLink(), err)
+				}
+			})
 		})
 	})
 }
