@@ -41,20 +41,71 @@ func asBytes(s any) []byte {
 	return nil
 }
 
+var (
+	orderedCollectionTypes = vocab.ActivityVocabularyTypes{
+		vocab.OrderedCollectionType,
+		vocab.OrderedCollectionPageType,
+	}
+	collectionTypes = vocab.ActivityVocabularyTypes{
+		vocab.CollectionType,
+		vocab.CollectionPageType,
+	}
+
+	allCollectionTypes = append(collectionTypes, orderedCollectionTypes...)
+)
+
 func (ms *memStorage) Load(i vocab.IRI, f ...filters.Check) (vocab.Item, error) {
 	raw, ok := ms.Map.Load(i)
 	if !ok {
 		return nil, errors.NotFoundf("unable to find %s", i)
 	}
-	return vocab.UnmarshalJSON(asBytes(raw))
+	ob, ok := raw.(vocab.Item)
+	if !ok {
+		return nil, errors.Newf("invalid item type in storage %T", raw)
+	}
+
+	if allCollectionTypes.Contains(ob.GetType()) {
+		itemsKey := i.AddPath("items")
+		var itemMap *sync.Map
+		_items, ok := ms.Map.Load(itemsKey)
+		if !ok {
+			return ob, errors.Newf("unable to find collection items map")
+		}
+		if itemMap, ok = _items.(*sync.Map); !ok {
+			return ob, errors.Newf("invalid items map %T", _items)
+		}
+
+		items := make(vocab.ItemCollection, 0)
+		itemMap.Range(func(_, raw any) bool {
+			if it, ok := raw.(vocab.Item); ok {
+				_ = items.Append(it)
+			}
+			return true
+		})
+		if len(items) > 0 {
+			var err error
+			if orderedCollectionTypes.Contains(ob.GetType()) {
+				err = vocab.OnOrderedCollection(ob, func(col *vocab.OrderedCollection) error {
+					col.OrderedItems = items
+					return nil
+				})
+			}
+			if collectionTypes.Contains(ob.GetType()) {
+				err = vocab.OnCollection(ob, func(col *vocab.Collection) error {
+					col.Items = items
+					return nil
+				})
+			}
+			if err != nil {
+				return ob, err
+			}
+		}
+	}
+	return ob, nil
 }
 
 func (ms *memStorage) Save(it vocab.Item) (vocab.Item, error) {
-	raw, err := vocab.MarshalJSON(it)
-	if err != nil {
-		return nil, err
-	}
-	ms.Map.Store(it.GetLink(), raw)
+	ms.Map.Store(it.GetLink(), it)
 	return it, nil
 }
 
@@ -78,9 +129,11 @@ func (ms *memStorage) Create(col vocab.CollectionInterface) (vocab.CollectionInt
 }
 
 func (ms *memStorage) AddTo(colIRI vocab.IRI, it vocab.Item) error {
-	if _, ok := ms.Map.Load(colIRI); !ok {
-		return errors.NotFoundf("unable to find collection %s", colIRI)
+	col, err := ms.Load(colIRI)
+	if err != nil {
+		return err
 	}
+
 	itemsKey := colIRI.GetLink().AddPath("items")
 	var items *sync.Map
 	_items, ok := ms.Map.Load(itemsKey)
@@ -90,13 +143,24 @@ func (ms *memStorage) AddTo(colIRI vocab.IRI, it vocab.Item) error {
 	if items, ok = _items.(*sync.Map); !ok {
 		return errors.Newf("invalid items map %T", _items)
 	}
-	items.Store(itemsKey, it)
-	return nil
+	items.Store(it.GetLink(), it)
+
+	// NOTE(marius): increase total items count
+	err = vocab.OnCollection(col, func(col *vocab.Collection) error {
+		col.TotalItems += 1
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	_, err = ms.Save(col)
+	return err
 }
 
 func (ms *memStorage) RemoveFrom(colIRI vocab.IRI, it vocab.Item) error {
-	if _, ok := ms.Map.Load(colIRI); ok {
-		return errors.NotFoundf("unable to find collection %s", colIRI)
+	col, err := ms.Load(colIRI)
+	if err != nil {
+		return err
 	}
 	itemsKey := colIRI.GetLink().AddPath("items")
 	var items *sync.Map
@@ -107,45 +171,34 @@ func (ms *memStorage) RemoveFrom(colIRI vocab.IRI, it vocab.Item) error {
 	if items, ok = _items.(*sync.Map); !ok {
 		return errors.Newf("invalid items map %T", _items)
 	}
-	items.Delete(itemsKey)
-	return nil
+	items.Delete(it.GetLink())
+
+	// NOTE(marius): decrease total items count
+	err = vocab.OnCollection(col, func(col *vocab.Collection) error {
+		if col.TotalItems > 0 {
+			col.TotalItems -= 1
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	_, err = ms.Save(col)
+	return err
 }
 
 func (ms *memStorage) LoadKey(iri vocab.IRI) (crypto.PrivateKey, error) {
 	privateKeyKey := iri.GetLink().AddPath("privateKey")
-	prvAny, ok := ms.Map.Load(privateKeyKey)
+	prvKey, ok := ms.Map.Load(privateKeyKey)
 	if !ok {
 		return nil, errors.Errorf("unable to find private key for iri %s", iri)
-	}
-	prvRaw, ok := prvAny.([]byte)
-	if !ok {
-		return nil, errors.Errorf("unable to load raw private key %T", prvAny)
-	}
-
-	b, _ := pem.Decode(prvRaw)
-	if b == nil {
-		return nil, errors.Errorf("failed decoding pem")
-	}
-	prvKey, err := x509.ParsePKCS8PrivateKey(b.Bytes)
-	if err != nil {
-		return nil, err
 	}
 	return prvKey, nil
 }
 
 func (ms *memStorage) SaveKey(iri vocab.IRI, key crypto.PrivateKey) (*vocab.PublicKey, error) {
-	prvEnc, err := x509.MarshalPKCS8PrivateKey(key)
-	if err != nil {
-		return nil, err
-	}
-
-	pemPrvKey := pem.EncodeToMemory(&pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: prvEnc,
-	})
-
 	privateKeyKey := iri.GetLink().AddPath("privateKey")
-	ms.Map.Store(privateKeyKey, pemPrvKey)
+	ms.Map.Store(privateKeyKey, key)
 
 	var pub crypto.PublicKey
 	switch prv := key.(type) {
@@ -188,11 +241,7 @@ func (ms *memStorage) PasswordCheck(iri vocab.IRI, pw []byte) error {
 	if !ok {
 		return errors.Errorf("unable to find password for iri %s", iri)
 	}
-	pwRaw, ok := pwAny.([]byte)
-	if !ok {
-		return errors.Errorf("unable to load raw password %T", pwAny)
-	}
-	if err := bcrypt.CompareHashAndPassword(pwRaw, pw); err != nil {
+	if err := bcrypt.CompareHashAndPassword(asBytes(pwAny), pw); err != nil {
 		return errors.NewUnauthorized(err, "Invalid pw")
 	}
 	return nil
