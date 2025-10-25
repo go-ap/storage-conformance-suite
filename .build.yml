@@ -1,0 +1,9 @@
+image: alpine/edge
+packages:
+  - go
+sources:
+  - https://github.com/go-ap/storage-conformance-suite
+tasks:
+  - tests: |
+      cd storage-conformance-suite
+      go test -cover -race -count=1 -json ./... | go run github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt -showteststatus

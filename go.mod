@@ -9,6 +9,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20210113124101-8612686d6dda
 	golang.org/x/crypto v0.43.0
+	golang.org/x/text v0.30.0
 )
 
 require (
@@ -17,6 +18,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.24.1 // indirect
 	github.com/go-ap/jsonld v0.0.0-20250905102310-8480b0fe24d9 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/gotesttools/gotestfmt/v2 v2.5.0 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
 	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
@@ -24,6 +26,7 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
-	golang.org/x/text v0.30.0 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 )
+
+tool github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt
