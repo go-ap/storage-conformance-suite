@@ -5,7 +5,6 @@ package names
 import (
 	"fmt"
 	"math/rand"
-	"time"
 )
 
 var (
@@ -847,9 +846,8 @@ var (
 	}
 )
 
-// GetRandomName generates a random name from the list of adjectives and surnames in this package
+// GetRandom generates a random name from the list of adjectives and surnames in this package
 // formatted as "adjective_surname". For example 'focused_turing'.
-func GetRandomName(pseudoRandomSeedBullshit int) string {
-	r := rand.New(rand.NewSource(time.Now().UnixNano() << pseudoRandomSeedBullshit))
-	return fmt.Sprintf("%s_%s", left[r.Intn(len(left))], right[r.Intn(len(right))])
+func GetRandom() string {
+	return fmt.Sprintf("%s_%s", left[rand.Intn(len(left))], right[rand.Intn(len(right))])
 }
