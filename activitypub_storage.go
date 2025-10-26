@@ -16,6 +16,9 @@ type ActivityPubStorage interface {
 	Save(it vocab.Item) (vocab.Item, error)
 	Delete(it vocab.Item) error
 
+	// Create
+	// NOTE(marius): should we remove this in favour of custom logic for Save()?
+	// (Similarly how we load items for collections in Load())
 	Create(col vocab.CollectionInterface) (vocab.CollectionInterface, error)
 	AddTo(colIRI vocab.IRI, it ...vocab.Item) error
 	RemoveFrom(colIRI vocab.IRI, it ...vocab.Item) error
@@ -140,6 +143,9 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				t.Errorf("unable to load collection %s: %s", colIRI, err)
 			}
 			err = vocab.OnCollectionIntf(loadedIt, func(col vocab.CollectionInterface) error {
+				if col.Count() != uint(len(randomObjects)) {
+					t.Fatalf("invalid collection item counts returned from loading %d, expected %d", col.Count(), len(randomObjects))
+				}
 				savedItems := col.Collection()
 				if len(savedItems) != len(randomObjects) {
 					t.Fatalf("invalid collection item counts returned from loading %d, expected %d", len(savedItems), len(randomObjects))
@@ -158,16 +164,17 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 		})
 
 		t.Run(fmt.Sprintf("remove %d items from collection", randomObjects.Count()), func(t *testing.T) {
-			for i, ob := range randomObjects {
-				if err = storage.RemoveFrom(colIRI, ob); err != nil {
-					t.Errorf("unable to remove object from collection at pos %d: %s", i, err)
-				}
+			if err = storage.RemoveFrom(colIRI, randomObjects...); err != nil {
+				t.Errorf("unable to remove objects from collection: %s", err)
 			}
 			loadedIt, err := storage.Load(colIRI)
 			if err != nil {
 				t.Errorf("unable to load collection %s: %s", colIRI, err)
 			}
 			err = vocab.OnCollectionIntf(loadedIt, func(col vocab.CollectionInterface) error {
+				if col.Count() != 0 {
+					t.Fatalf("invalid collection item counts returned from loading %d, expected %d", col.Count(), 0)
+				}
 				if remainingItems := col.Collection(); len(remainingItems) != 0 {
 					t.Errorf("invalid collection returned from loading it has %d items: expected empty", len(remainingItems))
 					t.Logf("%s", cmp.Diff(vocab.ItemCollection{}, remainingItems))
