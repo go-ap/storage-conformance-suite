@@ -64,43 +64,6 @@ func (ms *memStorage) Load(i vocab.IRI, f ...filters.Check) (vocab.Item, error) 
 		return nil, errors.Newf("invalid item type in storage %T", raw)
 	}
 
-	if allCollectionTypes.Contains(ob.GetType()) {
-		itemsKey := i.AddPath("items")
-		var itemMap *sync.Map
-		_items, ok := ms.Map.Load(itemsKey)
-		if !ok {
-			return ob, errors.Newf("unable to find collection items map")
-		}
-		if itemMap, ok = _items.(*sync.Map); !ok {
-			return ob, errors.Newf("invalid items map %T", _items)
-		}
-
-		items := make(vocab.ItemCollection, 0)
-		itemMap.Range(func(_, raw any) bool {
-			if it, ok := raw.(vocab.Item); ok {
-				_ = items.Append(it)
-			}
-			return true
-		})
-		if len(items) > 0 {
-			var err error
-			if orderedCollectionTypes.Contains(ob.GetType()) {
-				err = vocab.OnOrderedCollection(ob, func(col *vocab.OrderedCollection) error {
-					col.OrderedItems = items
-					return nil
-				})
-			}
-			if collectionTypes.Contains(ob.GetType()) {
-				err = vocab.OnCollection(ob, func(col *vocab.Collection) error {
-					col.Items = items
-					return nil
-				})
-			}
-			if err != nil {
-				return ob, err
-			}
-		}
-	}
 	return ob, nil
 }
 
@@ -146,27 +109,10 @@ func (ms *memStorage) AddTo(colIRI vocab.IRI, items ...vocab.Item) error {
 		return err
 	}
 
-	itemsKey := colIRI.GetLink().AddPath("items")
-	var itMap *sync.Map
-	rawItems, ok := ms.Map.Load(itemsKey)
-	if !ok {
-		return errors.Newf("unable to find collection items map")
-	}
-	if itMap, ok = rawItems.(*sync.Map); !ok {
-		return errors.Newf("invalid items map %T", rawItems)
-	}
-	for _, it := range items {
-		itMap.Store(it.GetLink(), it)
-	}
-
-	// NOTE(marius): increase total items count
-	err = vocab.OnCollection(col, func(col *vocab.Collection) error {
-		col.TotalItems += uint(len(items))
-		return nil
-	})
-	if err != nil {
+	if err = col.Append(items...); err != nil {
 		return err
 	}
+
 	_, err = ms.Save(col)
 	return err
 }
@@ -176,31 +122,9 @@ func (ms *memStorage) RemoveFrom(colIRI vocab.IRI, items ...vocab.Item) error {
 	if err != nil {
 		return err
 	}
-	itemsKey := colIRI.GetLink().AddPath("items")
-	var itMap *sync.Map
-	rawMap, ok := ms.Map.Load(itemsKey)
-	if !ok {
-		return errors.Newf("unable to find collection items map")
-	}
-	if itMap, ok = rawMap.(*sync.Map); !ok {
-		return errors.Newf("invalid items map %T", rawMap)
-	}
-	for _, it := range items {
-		itMap.Delete(it.GetLink())
-	}
 
-	// NOTE(marius): decrease total items count
-	err = vocab.OnCollection(col, func(col *vocab.Collection) error {
-		if col.TotalItems < uint(len(items)) {
-			col.TotalItems = 0
-		}
-		col.Items.Remove(items...)
-		col.TotalItems -= uint(len(items))
-		return nil
-	})
-	if err != nil {
-		return err
-	}
+	col.Remove(items...)
+
 	_, err = ms.Save(col)
 	return err
 }
