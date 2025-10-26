@@ -96,6 +96,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 			}
 		}
 	})
+
 	t.Run(fmt.Sprintf("delete %d random objects", len(randomObjects)), func(t *testing.T) {
 		for _, ob := range randomObjects {
 			err := storage.Delete(ob)

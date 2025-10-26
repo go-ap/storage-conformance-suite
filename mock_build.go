@@ -14,6 +14,7 @@ import (
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/storage-conformance-suite/internal"
+	"github.com/go-ap/storage-conformance-suite/internal/names"
 )
 
 func getRandomContent() []byte {
@@ -73,6 +74,21 @@ func RandomCollection(attrTo vocab.Item) vocab.CollectionInterface {
 	SetID(col)
 
 	return col
+}
+
+type generatorFn func(vocab.Item) vocab.Item
+
+func RandomItem(attrTo vocab.Item) vocab.Item {
+	genFns := []generatorFn{
+		RandomObject,
+		RandomActor,
+		func(attrTo vocab.Item) vocab.Item {
+			return RandomActivity(RandomObject(attrTo), attrTo)
+		},
+	}
+
+	fn := genFns[rand.Intn(len(genFns))]
+	return fn(attrTo)
 }
 
 func RandomObject(attrTo vocab.Item) vocab.Item {
@@ -141,8 +157,105 @@ func sortItemCollectionByID(items vocab.ItemCollection) {
 func getRandomItemCollection(count int) vocab.ItemCollection {
 	items := make(vocab.ItemCollection, 0, count)
 	for range count {
-		items = append(items, RandomObject(root))
+		items = append(items, RandomItem(root))
 	}
 	sortItemCollectionByID(items)
 	return items
+}
+
+func getRandomReason() string {
+	return "A random reason for a stupid activity"
+}
+
+var typesNeedReasons = vocab.ActivityVocabularyTypes{vocab.BlockType, vocab.FlagType, vocab.IgnoreType}
+
+var validForActorActivityTypes = vocab.ActivityVocabularyTypes{
+	vocab.UpdateType,
+	vocab.LikeType,
+	vocab.DislikeType,
+	vocab.FlagType,
+	vocab.BlockType,
+	vocab.FollowType,
+	vocab.IgnoreType,
+}
+
+var validForObjectActivityTypes = vocab.ActivityVocabularyTypes{
+	vocab.UpdateType,
+	vocab.LikeType,
+	vocab.DislikeType,
+	vocab.DeleteType,
+	vocab.FlagType,
+	vocab.BlockType,
+	vocab.FollowType,
+	vocab.IgnoreType,
+}
+
+var validForActivityActivityTypes = vocab.ActivityVocabularyTypes{
+	vocab.UndoType,
+}
+
+var validActivityTypes = append(validForObjectActivityTypes[:], validForActivityActivityTypes[:]...)
+
+func getActivityTypeByObject(ob vocab.Item) vocab.ActivityVocabularyType {
+	if vocab.IsNil(ob) {
+		return validForObjectActivityTypes[rand.Int()%len(validForObjectActivityTypes)]
+	}
+	if vocab.ActivityTypes.Contains(ob.GetType()) {
+		return validForActivityActivityTypes[rand.Int()%len(validForActivityActivityTypes)]
+	}
+	if vocab.ActorTypes.Contains(ob.GetType()) {
+		return validForActorActivityTypes[rand.Int()%len(validForActorActivityTypes)]
+	}
+	return validForObjectActivityTypes[rand.Int()%len(validForObjectActivityTypes)]
+}
+
+func RandomActivity(ob vocab.Item, attrTo vocab.Item) *vocab.Activity {
+	act := new(vocab.Activity)
+	act.Type = getActivityTypeByObject(ob)
+	if ob != nil {
+		act.Object = ob
+	}
+	act.AttributedTo = attrTo
+	act.Actor = attrTo
+	act.To = vocab.ItemCollection{rootID, vocab.PublicNS}
+
+	if typesNeedReasons.Contains(act.Type) {
+		act.Content = vocab.DefaultNaturalLanguage(getRandomReason())
+		act.Summary = vocab.DefaultNaturalLanguage(getRandomReason())
+	}
+	SetID(act)
+
+	return act
+}
+
+func RandomActor(attrTo vocab.Item) vocab.Item {
+	act := new(vocab.Actor)
+	act.Name = vocab.DefaultNaturalLanguage(names.GetRandom())
+	act.PreferredUsername = act.Name
+	act.Type = vocab.PersonType
+	act.AttributedTo = attrTo
+	act.Icon = RandomImage("image/png", attrTo.GetLink())
+	SetID(act)
+	return act
+}
+
+func getRandomContentByMimeType(mimeType vocab.MimeType) []byte {
+	if validArray, ok := internal.ContentMap[string(mimeType)]; ok {
+		return validArray.First()
+	}
+	return nil
+}
+
+func RandomImage(mime vocab.MimeType, parent vocab.Item) vocab.Item {
+	img := new(vocab.Image)
+	img.Type = vocab.ImageType
+	img.MediaType = mime
+	img.AttributedTo = parent
+
+	data := getRandomContentByMimeType(mime)
+	buf := make([]byte, base64.RawStdEncoding.EncodedLen(len(data)))
+	base64.RawStdEncoding.Encode(buf, data)
+	img.Content = vocab.DefaultNaturalLanguage(string(buf))
+	SetID(img)
+	return img
 }
