@@ -86,8 +86,6 @@ func (ms *memStorage) Create(col vocab.CollectionInterface) (vocab.CollectionInt
 	if !ok {
 		return nil, errors.Newf("invalid collection saved")
 	}
-	itemsKey := col.GetLink().AddPath("items")
-	ms.Map.Store(itemsKey, &sync.Map{})
 	return col, nil
 }
 
