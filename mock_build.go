@@ -85,6 +85,7 @@ func RandomItem(attrTo vocab.Item) vocab.Item {
 		func(attrTo vocab.Item) vocab.Item {
 			return RandomActivity(RandomObject(attrTo), attrTo)
 		},
+		RandomLink,
 	}
 
 	fn := genFns[rand.Intn(len(genFns))]
@@ -228,11 +229,15 @@ func RandomActivity(ob vocab.Item, attrTo vocab.Item) *vocab.Activity {
 	return act
 }
 
+func getRandomActorType() vocab.ActivityVocabularyType {
+	return vocab.ActorTypes[rand.Intn(len(vocab.ActorTypes))]
+}
+
 func RandomActor(attrTo vocab.Item) vocab.Item {
 	act := new(vocab.Actor)
 	act.Name = vocab.DefaultNaturalLanguage(names.GetRandom())
 	act.PreferredUsername = act.Name
-	act.Type = vocab.PersonType
+	act.Type = getRandomActorType()
 	act.AttributedTo = attrTo
 	act.Icon = RandomImage("image/png", attrTo.GetLink())
 	SetID(act)
@@ -258,4 +263,27 @@ func RandomImage(mime vocab.MimeType, parent vocab.Item) vocab.Item {
 	img.Content = vocab.DefaultNaturalLanguage(string(buf))
 	SetID(img)
 	return img
+}
+
+func getRandomLinkType() vocab.ActivityVocabularyType {
+	return vocab.LinkTypes[rand.Intn(len(vocab.LinkTypes))]
+}
+
+func getRandomName() vocab.NaturalLanguageValues {
+	return vocab.DefaultNaturalLanguage(names.GetRandom())
+}
+
+func getRandomHref() vocab.IRI {
+	return vocab.IRI("https://example.com").AddPath(filepath.Join(strings.Split(names.GetRandom(), "_")...))
+}
+
+func RandomLink(attrTo vocab.Item) vocab.Item {
+	ob := new(vocab.Link)
+	ob.Type = getRandomLinkType()
+	ob.Name = getRandomName()
+	ob.Href = getRandomHref()
+	ob.HrefLang = vocab.DefaultLang
+	ob.ID = ob.Href
+
+	return ob
 }

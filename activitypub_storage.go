@@ -61,6 +61,16 @@ func initActivityPub(storage ActivityPubStorage) error {
 	return nil
 }
 
+func buildTypeFilters() []filters.Checks {
+	checks := make([]filters.Checks, 0)
+	for _, typ := range vocab.Types {
+		checks = append(checks, filters.Checks{filters.HasType(typ)})
+	}
+	return checks
+}
+
+var byTypeFilters = buildTypeFilters()
+
 func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 	if err := initActivityPub(storage); err != nil {
 		t.Fatalf("unable to init ActivityPub test suite: %s", err)
@@ -77,7 +87,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 		}
 	})
 
-	randomObjects := getRandomItemCollection(20)
+	randomObjects := getRandomItemCollection(48)
 	t.Run(fmt.Sprintf("save %d random objects", len(randomObjects)), func(t *testing.T) {
 		for _, ob := range randomObjects {
 			savedIt, err := storage.Save(ob)
@@ -93,22 +103,6 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 			}
 			if !cmp.Equal(ob, loadIt) {
 				t.Errorf("invalid object returned from loading %s: %s", ob.GetLink(), cmp.Diff(ob, loadIt))
-			}
-		}
-	})
-
-	t.Run(fmt.Sprintf("delete %d random objects", len(randomObjects)), func(t *testing.T) {
-		for _, ob := range randomObjects {
-			err := storage.Delete(ob)
-			if err != nil {
-				t.Errorf("unable to save object: %s", err)
-			}
-			loadIt, err := storage.Load(ob.GetLink())
-			if err != nil && !errors.IsNotFound(err) {
-				t.Errorf("unable to load object %s: %s", ob.GetLink(), err)
-			}
-			if loadIt != nil {
-				t.Errorf("invalid object returned from loading %s: it should have been empty", ob.GetLink())
 			}
 		}
 	})
@@ -131,13 +125,9 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 			t.Errorf("invalid collection returned from loading %s: %s", colIRI, cmp.Diff(col, loadIt))
 		}
 
-		// NOTE(marius): generate random Item Collection
-		randomObjects := getRandomItemCollection(32)
 		t.Run(fmt.Sprintf("add %d items to collection", randomObjects.Count()), func(t *testing.T) {
-			for i, ob := range randomObjects {
-				if err = storage.AddTo(colIRI, ob); err != nil {
-					t.Errorf("unable to add object to collection at pos %d: %s", i, err)
-				}
+			if err = storage.AddTo(colIRI, randomObjects...); err != nil {
+				t.Errorf("unable to add objects to collection: %s", err)
 			}
 			loadedIt, err := storage.Load(colIRI)
 			if err != nil {
@@ -163,6 +153,39 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				t.Errorf("loaded object wasn't a collection %s: %s", colIRI, err)
 			}
 		})
+		queryFilters := append(byTypeFilters)
+		for _, fil := range queryFilters {
+			t.Run(fmt.Sprintf("query collection with filters %s", fil), func(t *testing.T) {
+				loadIt, err := storage.Load(colIRI, fil...)
+				if err != nil {
+					t.Errorf("unable to load collection %s: %s", colIRI, err)
+				}
+				var foundItems vocab.ItemCollection
+				var totalItems uint
+				err = vocab.OnOrderedCollection(loadIt, func(col *vocab.OrderedCollection) error {
+					foundItems = col.OrderedItems
+					totalItems = col.TotalItems
+					return nil
+				})
+				if err != nil {
+					t.Errorf("loaded object wasn't a collection %s: %s", colIRI, err)
+				}
+				filteredRandomObjects := fil.Run(randomObjects)
+				filteredItems, ok := filteredRandomObjects.(vocab.ItemCollection)
+				if !ok {
+					t.Fatalf("filtered items are not compatible with an Item Collection %T", filteredRandomObjects)
+				}
+				if totalItems != uint(len(randomObjects)) {
+					t.Fatalf("invalid collection total items count returned from loading %d, expected %d", totalItems, len(randomObjects))
+				}
+				if len(filteredItems) != len(foundItems) {
+					t.Fatalf("invalid collection item counts returned from loading %d, expected %d", len(foundItems), len(filteredItems))
+				}
+				if !cmp.Equal(foundItems, filteredItems) {
+					t.Errorf("invalid items returned from loading: %s", cmp.Diff(foundItems, filteredItems))
+				}
+			})
+		}
 
 		t.Run(fmt.Sprintf("remove %d items from collection", randomObjects.Count()), func(t *testing.T) {
 			if err = storage.RemoveFrom(colIRI, randomObjects...); err != nil {
@@ -186,5 +209,21 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				t.Errorf("loaded object wasn't a collection %s: %s", colIRI, err)
 			}
 		})
+	})
+
+	t.Run(fmt.Sprintf("delete %d random objects", len(randomObjects)), func(t *testing.T) {
+		for _, ob := range randomObjects {
+			err := storage.Delete(ob)
+			if err != nil {
+				t.Errorf("unable to save object: %s", err)
+			}
+			loadIt, err := storage.Load(ob.GetLink())
+			if err != nil && !errors.IsNotFound(err) {
+				t.Errorf("unable to load object %s: %s", ob.GetLink(), err)
+			}
+			if loadIt != nil {
+				t.Errorf("invalid object returned from loading %s: it should have been empty", ob.GetLink())
+			}
+		}
 	})
 }
