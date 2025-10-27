@@ -64,6 +64,20 @@ func (ms *memStorage) Load(i vocab.IRI, f ...filters.Check) (vocab.Item, error) 
 		return nil, errors.Newf("invalid item type in storage %T", raw)
 	}
 
+	if len(f) > 0 {
+		if orderedCollectionTypes.Contains(ob.GetType()) {
+			clone, _ := ob.(*vocab.OrderedCollection)
+			obCopy := *clone
+			filters.Checks(f).Run(&obCopy)
+			ob = obCopy
+		} else {
+			clone, _ := ob.(*vocab.Collection)
+			obCopy := *clone
+			filters.Checks(f).Run(&obCopy)
+			ob = obCopy
+		}
+	}
+
 	return ob, nil
 }
 
