@@ -1,4 +1,4 @@
-package conformance
+package internal
 
 import (
 	"bytes"
@@ -13,13 +13,39 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/storage-conformance-suite/internal"
 	"github.com/go-ap/storage-conformance-suite/internal/names"
+)
+
+var (
+	defaultTime = time.Date(1999, time.April, 1, 6, 6, 6, 0, time.UTC)
+
+	RootID = vocab.IRI("https://example.com/~root")
+
+	publicAudience = vocab.ItemCollection{vocab.PublicNS}
+
+	Root = &vocab.Actor{
+		ID:                RootID,
+		Type:              vocab.PersonType,
+		Published:         defaultTime,
+		Name:              vocab.DefaultNaturalLanguage("Rooty McRootface"),
+		Summary:           vocab.DefaultNaturalLanguage("The base actor for the conformance test suite"),
+		Content:           vocab.DefaultNaturalLanguage("<p>The base actor for the conformance test suite</p>"),
+		URL:               vocab.Item(RootID),
+		To:                publicAudience,
+		Likes:             vocab.Likes.IRI(RootID),
+		Shares:            vocab.Shares.IRI(RootID),
+		Inbox:             vocab.Inbox.IRI(RootID),
+		Outbox:            vocab.Outbox.IRI(RootID),
+		Following:         vocab.Following.IRI(RootID),
+		Followers:         vocab.Followers.IRI(RootID),
+		Liked:             vocab.Liked.IRI(RootID),
+		PreferredUsername: vocab.DefaultNaturalLanguage("root"),
+	}
 )
 
 func getRandomContent() []byte {
 	validArray := make([][]byte, 0)
-	for _, files := range internal.ContentMap {
+	for _, files := range ContentMap {
 		for _, file := range files {
 			validArray = append(validArray, file)
 		}
@@ -149,18 +175,18 @@ func getObjectTypes(data []byte) (vocab.ActivityVocabularyType, vocab.MimeType) 
 	return objectType, vocab.MimeType(contentType)
 }
 
-func sortItemCollectionByID(items vocab.ItemCollection) {
+func SortItemCollectionByID(items vocab.ItemCollection) {
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].GetLink().String() <= items[j].GetLink().String()
 	})
 }
 
-func getRandomItemCollection(count int) vocab.ItemCollection {
+func GetRandomItemCollection(count int) vocab.ItemCollection {
 	items := make(vocab.ItemCollection, 0, count)
 	for range count {
-		items = append(items, RandomItem(root))
+		items = append(items, RandomItem(Root))
 	}
-	sortItemCollectionByID(items)
+	SortItemCollectionByID(items)
 	return items
 }
 
@@ -218,7 +244,7 @@ func RandomActivity(ob vocab.Item, attrTo vocab.Item) *vocab.Activity {
 	}
 	act.AttributedTo = attrTo
 	act.Actor = attrTo
-	act.To = vocab.ItemCollection{rootID, vocab.PublicNS}
+	act.To = vocab.ItemCollection{RootID, vocab.PublicNS}
 
 	if typesNeedReasons.Contains(act.Type) {
 		act.Content = vocab.DefaultNaturalLanguage(getRandomReason())
@@ -245,7 +271,7 @@ func RandomActor(attrTo vocab.Item) vocab.Item {
 }
 
 func getRandomContentByMimeType(mimeType vocab.MimeType) []byte {
-	if validArray, ok := internal.ContentMap[string(mimeType)]; ok {
+	if validArray, ok := ContentMap[string(mimeType)]; ok {
 		return validArray.First()
 	}
 	return nil

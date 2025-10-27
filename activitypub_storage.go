@@ -3,11 +3,11 @@ package conformance
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/filters"
+	"github.com/go-ap/storage-conformance-suite/internal"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -24,38 +24,11 @@ type ActivityPubStorage interface {
 	RemoveFrom(colIRI vocab.IRI, it ...vocab.Item) error
 }
 
-var (
-	defaultTime = time.Date(1999, time.April, 1, 6, 6, 6, 0, time.UTC)
-
-	rootID = vocab.IRI("https://example.com/~root")
-
-	publicAudience = vocab.ItemCollection{vocab.PublicNS}
-
-	root = &vocab.Actor{
-		ID:                rootID,
-		Type:              vocab.PersonType,
-		Published:         defaultTime,
-		Name:              vocab.DefaultNaturalLanguage("Rooty McRootface"),
-		Summary:           vocab.DefaultNaturalLanguage("The base actor for the conformance test suite"),
-		Content:           vocab.DefaultNaturalLanguage("<p>The base actor for the conformance test suite</p>"),
-		URL:               vocab.Item(rootID),
-		To:                publicAudience,
-		Likes:             vocab.Likes.IRI(rootID),
-		Shares:            vocab.Shares.IRI(rootID),
-		Inbox:             vocab.Inbox.IRI(rootID),
-		Outbox:            vocab.Outbox.IRI(rootID),
-		Following:         vocab.Following.IRI(rootID),
-		Followers:         vocab.Followers.IRI(rootID),
-		Liked:             vocab.Liked.IRI(rootID),
-		PreferredUsername: vocab.DefaultNaturalLanguage("root"),
-	}
-)
-
 func initActivityPub(storage ActivityPubStorage) error {
 	if storage == nil {
 		return errNilStorage
 	}
-	if _, err := storage.Save(root); err != nil {
+	if _, err := storage.Save(internal.Root); err != nil {
 		return err
 	}
 	return nil
@@ -78,16 +51,16 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 
 	// Load root item
 	t.Run("Load Root item", func(t *testing.T) {
-		it, err := storage.Load(rootID)
+		it, err := storage.Load(internal.RootID)
 		if err != nil {
 			t.Errorf("unable to load root item: %s", err)
 		}
-		if !cmp.Equal(root, it) {
-			t.Errorf("invalid root actor loaded from storage %s", cmp.Diff(root, it))
+		if !cmp.Equal(internal.Root, it) {
+			t.Errorf("invalid root actor loaded from storage %s", cmp.Diff(internal.Root, it))
 		}
 	})
 
-	randomObjects := getRandomItemCollection(48)
+	randomObjects := internal.GetRandomItemCollection(48)
 	t.Run(fmt.Sprintf("save %d random objects", len(randomObjects)), func(t *testing.T) {
 		for _, ob := range randomObjects {
 			savedIt, err := storage.Save(ob)
@@ -107,7 +80,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 		}
 	})
 
-	col := RandomCollection(root)
+	col := internal.RandomCollection(internal.Root)
 	colIRI := col.GetLink()
 	t.Run("create collection", func(t *testing.T) {
 		savedIt, err := storage.Create(col)
@@ -141,7 +114,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				if len(savedItems) != len(randomObjects) {
 					t.Fatalf("invalid collection item counts returned from loading %d, expected %d", len(savedItems), len(randomObjects))
 				}
-				sortItemCollectionByID(savedItems)
+				internal.SortItemCollectionByID(savedItems)
 				for i, it := range randomObjects {
 					if !cmp.Equal(it, savedItems[i]) {
 						t.Errorf("invalid item at pos %d, unable: %s", i, cmp.Diff(it, savedItems))

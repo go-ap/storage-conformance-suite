@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/storage-conformance-suite/internal"
 )
 
 type KeyStorage interface {
@@ -19,11 +20,11 @@ var privateKey, _ = rsa.GenerateKey(rand.Reader, 2048)
 func initKeyStorage(storage ActivityPubStorage) error {
 	keyStorage, ok := storage.(KeyStorage)
 	if ok {
-		pk, err := keyStorage.SaveKey(root.ID, privateKey)
+		pk, err := keyStorage.SaveKey(internal.RootID, privateKey)
 		if err != nil {
 			return err
 		}
-		root.PublicKey = *pk
+		internal.Root.PublicKey = *pk
 	}
 	return nil
 }

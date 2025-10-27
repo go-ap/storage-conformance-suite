@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
+	"github.com/go-ap/storage-conformance-suite/internal"
 )
 
 type PasswordStorage interface {
@@ -16,7 +17,7 @@ var rootPw = []byte("notSoSecretP4ssw0rd")
 func initPasswordStorage(storage ActivityPubStorage) error {
 	pwStorage, ok := storage.(PasswordStorage)
 	if ok {
-		err := pwStorage.PasswordSet(root.ID, rootPw)
+		err := pwStorage.PasswordSet(internal.RootID, rootPw)
 		if err != nil {
 			return err
 		}
