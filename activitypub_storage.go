@@ -42,7 +42,23 @@ func buildTypeFilters() []filters.Checks {
 	return checks
 }
 
+func buildActivityAndObjectTypeFilters() []filters.Checks {
+	checks := make([]filters.Checks, 0)
+	objectTypesChecks := make(filters.Checks, 0)
+	for _, typ := range vocab.ObjectTypes {
+		objectTypesChecks = append(objectTypesChecks, filters.HasType(typ))
+	}
+	for _, typ := range vocab.ActivityTypes {
+		for _, objectTypeCheck := range objectTypesChecks {
+			activityTypeObjectTypeCheck := filters.All(filters.HasType(typ), filters.Object(objectTypeCheck))
+			checks = append(checks, filters.Checks{activityTypeObjectTypeCheck})
+		}
+	}
+	return checks
+}
+
 var byTypeFilters = buildTypeFilters()
+var byActivityObjectTypeFilters = buildActivityAndObjectTypeFilters()
 
 func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 	if err := initActivityPub(storage); err != nil {
@@ -81,6 +97,13 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 	})
 
 	col := internal.RandomCollection(internal.Root)
+	_ = vocab.OnObject(col, func(ob *vocab.Object) error {
+		// NOTE(marius): this is a corner case for the storage-fs backend which doesn't work well with collections
+		// that don't have IRIs ending in the traditional collection names (inbox, outbox, followers, etc)
+		ob.ID = vocab.Inbox.IRI(ob.AttributedTo.GetLink())
+		ob.AttributedTo = ob.AttributedTo.GetLink()
+		return nil
+	})
 	colIRI := col.GetLink()
 	t.Run("create collection", func(t *testing.T) {
 		savedIt, err := storage.Create(col)
@@ -126,7 +149,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				t.Errorf("loaded object wasn't a collection %s: %s", colIRI, err)
 			}
 		})
-		queryFilters := append(byTypeFilters)
+		queryFilters := append(byTypeFilters, byActivityObjectTypeFilters...)
 		for _, fil := range queryFilters {
 			t.Run(fmt.Sprintf("query collection with filters %s", fil), func(t *testing.T) {
 				loadIt, err := storage.Load(colIRI, fil...)
