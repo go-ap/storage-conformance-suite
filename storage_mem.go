@@ -14,6 +14,7 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/filters"
+	"github.com/openshift/osin"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -141,6 +142,65 @@ func (ms *memStorage) RemoveFrom(colIRI vocab.IRI, items ...vocab.Item) error {
 	return err
 }
 
+func (ms *memStorage) UpdateClient(c osin.Client) error {
+	return errNotImplemented
+}
+
+func (ms *memStorage) CreateClient(c osin.Client) error {
+	return errNotImplemented
+}
+
+func (ms *memStorage) RemoveClient(id string) error {
+	return errNotImplemented
+}
+
+func (ms *memStorage) ListClients() ([]osin.Client, error) {
+	return nil, errNotImplemented
+}
+
+func (ms *memStorage) Clone() osin.Storage {
+	return ms
+}
+
+func (ms *memStorage) Close() {
+}
+
+func (ms *memStorage) GetClient(id string) (osin.Client, error) {
+	return nil, errNotImplemented
+}
+
+func (ms *memStorage) SaveAuthorize(data *osin.AuthorizeData) error {
+	return errNotImplemented
+}
+
+func (ms *memStorage) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
+	return nil, errNotImplemented
+}
+
+func (ms *memStorage) RemoveAuthorize(code string) error {
+	return errNotImplemented
+}
+
+func (ms *memStorage) SaveAccess(data *osin.AccessData) error {
+	return errNotImplemented
+}
+
+func (ms *memStorage) LoadAccess(token string) (*osin.AccessData, error) {
+	return nil, errNotImplemented
+}
+
+func (ms *memStorage) RemoveAccess(token string) error {
+	return errNotImplemented
+}
+
+func (ms *memStorage) LoadRefresh(token string) (*osin.AccessData, error) {
+	return nil, errNotImplemented
+}
+
+func (ms *memStorage) RemoveRefresh(token string) error {
+	return errNotImplemented
+}
+
 func (ms *memStorage) LoadKey(iri vocab.IRI) (crypto.PrivateKey, error) {
 	privateKeyKey := iri.GetLink().AddPath("privateKey")
 	prvKey, ok := ms.Map.Load(privateKeyKey)
@@ -225,3 +285,6 @@ var _ ActivityPubStorage = &memStorage{}
 var _ MetadataStorage = &memStorage{}
 var _ PasswordStorage = &memStorage{}
 var _ KeyStorage = &memStorage{}
+var _ OSINStorage = &memStorage{}
+var _ ClientLister = &memStorage{}
+var _ ClientSaver = &memStorage{}
