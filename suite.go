@@ -55,18 +55,28 @@ func (tt TestType) Run(t *testing.T, storage ActivityPubStorage) {
 		return
 	}
 	if tt&TestActivityPub == TestActivityPub {
-		RunActivityPubTests(t, storage)
-	}
-	if tt&TestKey == TestKey {
-		RunKeyTests(t, storage)
-	}
-	if tt&TestMetadata == TestMetadata {
-		RunMetadataTests(t, storage)
-	}
-	if tt&TestPassword == TestPassword {
-		RunPasswordTests(t, storage)
+		t.Run("ActivityPub tests", func(t *testing.T) {
+			RunActivityPubTests(t, storage)
+		})
 	}
 	if tt&TestOAuth == TestOAuth {
-		RunOAuthTests(t, storage)
+		t.Run("OAuth2 tests", func(t *testing.T) {
+			RunOAuthTests(t, storage)
+		})
+	}
+	if tt&TestKey == TestKey {
+		t.Run("Key tests", func(t *testing.T) {
+			RunKeyTests(t, storage)
+		})
+	}
+	if tt&TestPassword == TestPassword {
+		t.Run("Password tests", func(t *testing.T) {
+			RunPasswordTests(t, storage)
+		})
+	}
+	if tt&TestMetadata == TestMetadata {
+		t.Run("MetaData tests", func(t *testing.T) {
+			RunMetadataTests(t, storage)
+		})
 	}
 }
