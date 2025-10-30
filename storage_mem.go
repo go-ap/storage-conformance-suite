@@ -162,7 +162,7 @@ func (ms *memStorage) SaveKey(iri vocab.IRI, key crypto.PrivateKey) (*vocab.Publ
 		pub = prv.Public()
 	case *dsa.PrivateKey:
 		pub = &prv.PublicKey
-	case *ed25519.PrivateKey:
+	case ed25519.PrivateKey:
 		pub = prv.Public()
 	default:
 		return nil, nil
