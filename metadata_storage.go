@@ -12,5 +12,8 @@ type MetadataStorage interface {
 }
 
 func RunMetadataTests(t *testing.T, storage ActivityPubStorage) {
-	t.Skipf("%s", errNotImplemented)
+	_, ok := storage.(MetadataStorage)
+	if !ok {
+		t.Skipf("storage %T is not compatible with MetaData functionality", storage)
+	}
 }

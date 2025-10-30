@@ -42,7 +42,7 @@ func initKeyStorage(storage KeyStorage) error {
 func RunKeyTests(t *testing.T, storage ActivityPubStorage) {
 	keyStorage, ok := storage.(KeyStorage)
 	if !ok {
-		t.Fatalf("storage is not compatible with KeyStorage %T", storage)
+		t.Fatalf("storage %T is not compatible with Key store operations", storage)
 	}
 	if err := initKeyStorage(keyStorage); err != nil {
 		t.Fatalf("unable to init Key pair test suite: %s", err)

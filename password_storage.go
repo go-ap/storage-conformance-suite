@@ -25,7 +25,7 @@ func initPasswordStorage(storage PasswordStorage) error {
 func RunPasswordTests(t *testing.T, storage ActivityPubStorage) {
 	pwStorage, ok := storage.(PasswordStorage)
 	if !ok {
-		t.Skipf("storage %T does not have Password support", storage)
+		t.Skipf("storage %T is not compatible with Password operations", storage)
 	}
 
 	if err := initPasswordStorage(pwStorage); err != nil {

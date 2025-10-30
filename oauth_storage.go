@@ -32,5 +32,9 @@ type ClientLister interface {
 }
 
 func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
+	_, ok := storage.(OSINStorage)
+	if !ok {
+		t.Skipf("storage %T is not compatible with OAuth2 operations", storage)
+	}
 	t.Skipf("%s", errNotImplemented)
 }
