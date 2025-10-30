@@ -184,13 +184,17 @@ func (ms *memStorage) SaveKey(iri vocab.IRI, key crypto.PrivateKey) (*vocab.Publ
 }
 
 func (ms *memStorage) PasswordSet(iri vocab.IRI, pw []byte) error {
-	privateKeyKey := iri.GetLink().AddPath("password")
-	ms.Map.Store(privateKeyKey, pw)
+	privateKeyKey := iri.GetLink().AddPath("__password")
+	hashed, err := bcrypt.GenerateFromPassword(pw, bcrypt.MinCost)
+	if err != nil {
+		return err
+	}
+	ms.Map.Store(privateKeyKey, hashed)
 	return nil
 }
 
 func (ms *memStorage) PasswordCheck(iri vocab.IRI, pw []byte) error {
-	pwKey := iri.GetLink().AddPath("password")
+	pwKey := iri.GetLink().AddPath("__password")
 	pwAny, ok := ms.Map.Load(pwKey)
 	if !ok {
 		return errors.Errorf("unable to find password for iri %s", iri)
