@@ -60,6 +60,19 @@ func buildActivityAndObjectTypeFilters() []filters.Checks {
 var byTypeFilters = buildTypeFilters()
 var byActivityObjectTypeFilters = buildActivityAndObjectTypeFilters()
 
+/*
+ * TODO
+ *  - Make sure the tests are independent, currently collection save/query/delete are dependent on having objects saved
+ *    This would make the tests have a two phase structure:
+ *        1. mock the expected storage layout,
+ *        2. test expectations
+ *    Separate tests into different test functions.
+ *  - Add collection creation tests for multiple versions:
+ *      1. Expected collection names: inbox, outbox, followers, following, shares, liked, likes, (blocked, ignored).
+ *      2. Random IRI paths without any structure to them.
+ *  - Build a proper collection filter querying matrix
+ */
+
 func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 	if err := initActivityPub(storage); err != nil {
 		t.Fatalf("unable to init ActivityPub test suite: %s", err)
