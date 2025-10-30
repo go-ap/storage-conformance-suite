@@ -48,7 +48,7 @@ func RunKeyTests(t *testing.T, storage ActivityPubStorage) {
 		t.Fatalf("unable to init Key pair test suite: %s", err)
 	}
 
-	t.Run("get Root key", func(t *testing.T) {
+	t.Run("load Root key", func(t *testing.T) {
 		prv, err := keyStorage.LoadKey(internal.RootID)
 		if err != nil {
 			t.Fatalf("unable to load private key %s", err)
@@ -91,7 +91,7 @@ func RunKeyTests(t *testing.T, storage ActivityPubStorage) {
 
 	keys := genPrivateKeys()
 	for _, key := range keys {
-		t.Run(fmt.Sprintf("test %T key", key), func(t *testing.T) {
+		t.Run(fmt.Sprintf("save %T key", key), func(t *testing.T) {
 			it := internal.RandomActor(internal.RootID)
 			actor, err := vocab.ToActor(it)
 			if err != nil {
