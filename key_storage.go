@@ -12,6 +12,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	weak "math/rand"
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
@@ -24,7 +25,11 @@ type KeyStorage interface {
 	SaveKey(iri vocab.IRI, key crypto.PrivateKey) (*vocab.PublicKey, error)
 }
 
-var privateKey, _ = rsa.GenerateKey(rand.Reader, 2048)
+var (
+	privateKey, _ = rsa.GenerateKey(rand.Reader, 2048)
+
+	keys = genPrivateKeys()
+)
 
 func initKeyStorage(storage KeyStorage) error {
 	pk, err := storage.SaveKey(internal.RootID, privateKey)
@@ -89,7 +94,6 @@ func RunKeyTests(t *testing.T, storage ActivityPubStorage) {
 		}
 	})
 
-	keys := genPrivateKeys()
 	for _, key := range keys {
 		t.Run(fmt.Sprintf("save %T key", key), func(t *testing.T) {
 			it := internal.RandomActor(internal.RootID)
@@ -142,6 +146,10 @@ func RunKeyTests(t *testing.T, storage ActivityPubStorage) {
 			})
 		})
 	}
+}
+
+func getPrivateKey() crypto.PrivateKey {
+	return keys[weak.Intn(len(keys))]
 }
 
 func genPrivateKeys() []crypto.PrivateKey {

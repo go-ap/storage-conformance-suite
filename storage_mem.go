@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"reflect"
 	"sync"
 
 	vocab "github.com/go-ap/activitypub"
@@ -266,17 +267,17 @@ func (ms *memStorage) PasswordCheck(iri vocab.IRI, pw []byte) error {
 }
 
 func (ms *memStorage) LoadMetadata(iri vocab.IRI, m any) error {
-	metaKey := iri.GetLink().AddPath("meta")
+	metaKey := iri.GetLink().AddPath("__meta")
 	metaAny, ok := ms.Map.Load(metaKey)
 	if !ok {
 		return errors.Errorf("unable to find metadata for iri %s", iri)
 	}
-	m = &metaAny
+	copy(metaAny, m)
 	return nil
 }
 
 func (ms *memStorage) SaveMetadata(iri vocab.IRI, m any) error {
-	metaKey := iri.GetLink().AddPath("meta")
+	metaKey := iri.GetLink().AddPath("__meta")
 	ms.Map.Store(metaKey, m)
 	return nil
 }
@@ -288,3 +289,9 @@ var _ KeyStorage = &memStorage{}
 var _ OSINStorage = &memStorage{}
 var _ ClientLister = &memStorage{}
 var _ ClientSaver = &memStorage{}
+
+// copy copies from one instance of type T to another
+func copy[T any](from, to T) {
+	r := reflect.ValueOf(to).Elem()
+	r.Set(reflect.ValueOf(from))
+}
