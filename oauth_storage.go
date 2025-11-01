@@ -2,7 +2,9 @@ package conformance
 
 import (
 	"testing"
+	"time"
 
+	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/google/go-cmp/cmp"
 	"github.com/openshift/osin"
@@ -35,6 +37,12 @@ type ClientLister interface {
 	ListClients() ([]osin.Client, error)
 	GetClient(id string) (osin.Client, error)
 }
+
+var (
+	now = time.Now()
+
+	someDate = time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Minute(), 0, time.UTC)
+)
 
 func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 	oStorage, ok := storage.(OSINStorage)
@@ -102,7 +110,7 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			}
 			loaded, err := oStorage.GetClient(client.Id)
 			if !errors.IsNotFound(err) {
-				t.Errorf("received error does not match NotFound: %s", err)
+				t.Errorf("the received error does not match NotFound: %s", err)
 			}
 			if loaded != nil {
 				t.Errorf("we shouldn't be able to load deleted client, received %s", cmp.Diff(nil, loaded))
@@ -110,33 +118,168 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 		})
 	})
 	t.Run("authorize operations", func(t *testing.T) {
+		client := osin.DefaultClient{
+			Id:          "test",
+			Secret:      "asd",
+			RedirectUri: "http://127.0.0.1",
+			UserData:    "https://example.com/~jdoe",
+		}
+		if saver, ok := oStorage.(ClientSaver); ok {
+			_ = saver.CreateClient(&client)
+		}
+
+		auth := osin.AuthorizeData{
+			Client:      &client,
+			Code:        "xx44aa1!",
+			ExpiresIn:   int32(time.Hour.Seconds()),
+			Scope:       "none",
+			RedirectUri: "http://127.0.0.1",
+			State:       "no-state",
+			CreatedAt:   someDate,
+			UserData:    vocab.IRI("https://example.com/~johndoe"),
+		}
 		t.Run("save authorize", func(t *testing.T) {
-			t.Skipf("%s", errNotImplemented)
+			if err := oStorage.SaveAuthorize(&auth); err != nil {
+				t.Errorf("unable to save authorize data: %s", err)
+			}
 		})
 		t.Run("load authorize", func(t *testing.T) {
-			t.Skipf("%s", errNotImplemented)
+			loaded, err := oStorage.LoadAuthorize(auth.Code)
+			if err != nil {
+				t.Errorf("unable to load authorize data: %s", err)
+			}
+			if !cmp.Equal(&auth, loaded) {
+				t.Errorf("invalid authorize data returned from loading %s", cmp.Diff(&auth, loaded))
+			}
 		})
 		t.Run("remove authorize", func(t *testing.T) {
-			t.Skipf("%s", errNotImplemented)
+			err := oStorage.RemoveAuthorize(auth.Code)
+			if err != nil {
+				t.Errorf("unable to load authorize data: %s", err)
+			}
+			loaded, err := oStorage.LoadAuthorize(auth.Code)
+			if !errors.IsNotFound(err) {
+				t.Errorf("the received error does not match NotFound: %s", err)
+			}
+			if loaded != nil {
+				t.Errorf("we shouldn't be able to load deleted authorize data, received %s", cmp.Diff(nil, loaded))
+			}
 		})
 	})
 	t.Run("access operations", func(t *testing.T) {
-		t.Run("save access", func(t *testing.T) {
-			t.Skipf("%s", errNotImplemented)
+		client := osin.DefaultClient{
+			Id:          "test",
+			Secret:      "asd",
+			RedirectUri: "http://127.0.0.1",
+			UserData:    "https://example.com/~jdoe",
+		}
+		if saver, ok := oStorage.(ClientSaver); ok {
+			_ = saver.CreateClient(&client)
+		}
+
+		auth := osin.AuthorizeData{
+			Client:      &client,
+			Code:        "xx44aa1!",
+			ExpiresIn:   int32(time.Hour.Seconds()),
+			Scope:       "none",
+			RedirectUri: "http://127.0.0.1",
+			State:       "no-state",
+			CreatedAt:   someDate,
+			UserData:    vocab.IRI("https://example.com/~johndoe"),
+		}
+		_ = oStorage.SaveAuthorize(&auth)
+		access := osin.AccessData{
+			Client:        &client,
+			AuthorizeData: &auth,
+			AccessToken:   "f00b4r",
+			RefreshToken:  "s0fresh",
+			ExpiresIn:     int32(time.Hour.Seconds()),
+			Scope:         "none",
+			RedirectUri:   "http://127.0.0.1",
+			CreatedAt:     someDate,
+			UserData:      "https://example.com/~johndoe",
+		}
+		t.Run("save access data", func(t *testing.T) {
+			if err := oStorage.SaveAccess(&access); err != nil {
+				t.Errorf("unable to save access data: %s", err)
+			}
 		})
-		t.Run("load access", func(t *testing.T) {
-			t.Skipf("%s", errNotImplemented)
+		t.Run("load access data", func(t *testing.T) {
+			loaded, err := oStorage.LoadAccess(access.AccessToken)
+			if err != nil {
+				t.Errorf("unable to load access data: %s", err)
+			}
+			if !cmp.Equal(&access, loaded) {
+				t.Errorf("invalid access data returned from loading %s", cmp.Diff(&access, loaded))
+			}
 		})
-		t.Run("remove access", func(t *testing.T) {
-			t.Skipf("%s", errNotImplemented)
+		t.Run("remove access data", func(t *testing.T) {
+			if err := oStorage.RemoveAccess(access.AccessToken); err != nil {
+				t.Errorf("unable to remove access data: %s", err)
+			}
+			loaded, err := oStorage.LoadAccess(access.AccessToken)
+			if !errors.IsNotFound(err) {
+				t.Errorf("the received error does not match NotFound: %s", err)
+			}
+			if loaded != nil {
+				t.Errorf("we shouldn't be able to load deleted access data, received %s", cmp.Diff(nil, loaded))
+			}
 		})
 	})
 	t.Run("refresh operations", func(t *testing.T) {
-		t.Run("load refresh", func(t *testing.T) {
-			t.Skipf("%s", errNotImplemented)
+		client := osin.DefaultClient{
+			Id:          "test",
+			Secret:      "asd",
+			RedirectUri: "http://127.0.0.1",
+			UserData:    "https://example.com/~jdoe",
+		}
+		if saver, ok := oStorage.(ClientSaver); ok {
+			_ = saver.CreateClient(&client)
+		}
+
+		auth := osin.AuthorizeData{
+			Client:      &client,
+			Code:        "xx44aa1!",
+			ExpiresIn:   int32(time.Hour.Seconds()),
+			Scope:       "none",
+			RedirectUri: "http://127.0.0.1",
+			State:       "no-state",
+			CreatedAt:   someDate,
+			UserData:    vocab.IRI("https://example.com/~johndoe"),
+		}
+		_ = oStorage.SaveAuthorize(&auth)
+		access := osin.AccessData{
+			Client:        &client,
+			AuthorizeData: &auth,
+			AccessToken:   "f00b4r",
+			RefreshToken:  "s0fresh",
+			ExpiresIn:     int32(time.Hour.Seconds()),
+			Scope:         "none",
+			RedirectUri:   "http://127.0.0.1",
+			CreatedAt:     someDate,
+			UserData:      "https://example.com/~johndoe",
+		}
+		_ = oStorage.SaveAccess(&access)
+		t.Run("load refresh data", func(t *testing.T) {
+			loaded, err := oStorage.LoadRefresh(access.RefreshToken)
+			if err != nil {
+				t.Errorf("unable to load refresh data: %s", err)
+			}
+			if !cmp.Equal(&access, loaded) {
+				t.Errorf("invalid refresh access data loaded %s", cmp.Diff(&access, loaded))
+			}
 		})
-		t.Run("remove refresh", func(t *testing.T) {
-			t.Skipf("%s", errNotImplemented)
+		t.Run("remove refresh data", func(t *testing.T) {
+			if err := oStorage.RemoveRefresh(access.RefreshToken); err != nil {
+				t.Errorf("unable to remove refresh data: %s", err)
+			}
+			loaded, err := oStorage.LoadRefresh(access.RefreshToken)
+			if !errors.IsNotFound(err) {
+				t.Errorf("the received error does not match NotFound: %s", err)
+			}
+			if loaded != nil {
+				t.Errorf("we shouldn't be able to load deleted refresh data, received %s", cmp.Diff(nil, loaded))
+			}
 		})
 	})
 }
