@@ -199,36 +199,84 @@ func (ms *memStorage) GetClient(id string) (osin.Client, error) {
 	return cl, nil
 }
 
+func authorizePath(code string) string {
+	return filepath.Join("oauth", "authorize", code)
+}
+
 func (ms *memStorage) SaveAuthorize(data *osin.AuthorizeData) error {
-	return errNotImplemented
+	ms.Map.Store(authorizePath(data.Code), data)
+	return nil
 }
 
 func (ms *memStorage) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
-	return nil, errNotImplemented
+	val, ok := ms.Map.Load(authorizePath(code))
+	if !ok {
+		return nil, errors.NotFoundf("authorization data not found %s", code)
+	}
+	auth, ok := val.(*osin.AuthorizeData)
+	if !ok {
+		return nil, errors.Errorf("invalid type for authorization data %T", val)
+	}
+	return auth, nil
 }
 
 func (ms *memStorage) RemoveAuthorize(code string) error {
-	return errNotImplemented
+	ms.Map.Delete(authorizePath(code))
+	return nil
+}
+
+func accessPath(token string) string {
+	return filepath.Join("oauth", "access", token)
 }
 
 func (ms *memStorage) SaveAccess(data *osin.AccessData) error {
-	return errNotImplemented
+	ms.Map.Store(accessPath(data.AccessToken), data)
+	if data.RefreshToken != "" {
+		ms.Map.Store(refreshPath(data.RefreshToken), data.AccessToken)
+	}
+	return nil
 }
 
 func (ms *memStorage) LoadAccess(token string) (*osin.AccessData, error) {
-	return nil, errNotImplemented
+	val, ok := ms.Map.Load(accessPath(token))
+	if !ok {
+		return nil, errors.NotFoundf("access data not found %s", token)
+	}
+	access, ok := val.(*osin.AccessData)
+	if !ok {
+		return nil, errors.Errorf("invalid type for access data %T", val)
+	}
+	return access, nil
 }
 
 func (ms *memStorage) RemoveAccess(token string) error {
-	return errNotImplemented
+	exists, _ := ms.LoadAccess(token)
+	ms.Map.Delete(accessPath(token))
+	if exists != nil && exists.RefreshToken != "" {
+		ms.Map.Delete(refreshPath(exists.RefreshToken))
+	}
+	return nil
+}
+
+func refreshPath(token string) string {
+	return filepath.Join("oauth", "refresh", token)
 }
 
 func (ms *memStorage) LoadRefresh(token string) (*osin.AccessData, error) {
-	return nil, errNotImplemented
+	val, ok := ms.Map.Load(refreshPath(token))
+	if !ok {
+		return nil, errors.NotFoundf("refresh data not found %s", token)
+	}
+	token, ok = val.(string)
+	if !ok {
+		return nil, errors.Errorf("invalid type for refresh data %T", val)
+	}
+	return ms.LoadAccess(token)
 }
 
 func (ms *memStorage) RemoveRefresh(token string) error {
-	return errNotImplemented
+	ms.Map.Delete(refreshPath(token))
+	return nil
 }
 
 func (ms *memStorage) LoadKey(iri vocab.IRI) (crypto.PrivateKey, error) {
