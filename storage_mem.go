@@ -9,7 +9,9 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 
 	vocab "github.com/go-ap/activitypub"
@@ -143,20 +145,39 @@ func (ms *memStorage) RemoveFrom(colIRI vocab.IRI, items ...vocab.Item) error {
 	return err
 }
 
-func (ms *memStorage) UpdateClient(c osin.Client) error {
-	return errNotImplemented
+func clientPath(clientID string) string {
+	return filepath.Join("oauth", "clients", clientID)
 }
 
 func (ms *memStorage) CreateClient(c osin.Client) error {
-	return errNotImplemented
+	ms.Map.Store(clientPath(c.GetId()), c)
+	return nil
+}
+
+func (ms *memStorage) UpdateClient(c osin.Client) error {
+	ms.Map.Store(clientPath(c.GetId()), c)
+	return nil
 }
 
 func (ms *memStorage) RemoveClient(id string) error {
-	return errNotImplemented
+	ms.Map.Delete(clientPath(id))
+	return nil
 }
 
 func (ms *memStorage) ListClients() ([]osin.Client, error) {
-	return nil, errNotImplemented
+	clients := make([]osin.Client, 0)
+	ms.Map.Range(func(key, value any) bool {
+		path, ok := key.(string)
+		if ok {
+			if strings.HasPrefix(path, "oauth/clients") {
+				if cl, ok := value.(osin.Client); ok {
+					clients = append(clients, cl)
+				}
+			}
+		}
+		return true
+	})
+	return clients, nil
 }
 
 func (ms *memStorage) Clone() osin.Storage {
@@ -167,7 +188,15 @@ func (ms *memStorage) Close() {
 }
 
 func (ms *memStorage) GetClient(id string) (osin.Client, error) {
-	return nil, errNotImplemented
+	val, ok := ms.Map.Load(clientPath(id))
+	if !ok {
+		return nil, errors.NotFoundf("client not found %s", id)
+	}
+	cl, ok := val.(osin.Client)
+	if !ok {
+		return nil, errors.Errorf("invalid type for client %T", val)
+	}
+	return cl, nil
 }
 
 func (ms *memStorage) SaveAuthorize(data *osin.AuthorizeData) error {
