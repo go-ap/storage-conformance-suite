@@ -44,6 +44,7 @@ func maybeOpen(t *testing.T, storage ActivityPubStorage) func() {
 	}
 	return func() {}
 }
+
 func (tt TestType) Run(t *testing.T, storage ActivityPubStorage) {
 	maybeClose := maybeOpen(t, storage)
 	defer maybeClose()

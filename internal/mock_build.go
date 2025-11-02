@@ -76,7 +76,7 @@ func SetID(it vocab.Item) {
 		if !vocab.IsNil(ob.AttributedTo) {
 			base = ob.AttributedTo.GetLink().String()
 		}
-		pieces = append(pieces, base)
+		pieces = append(pieces, "/")
 		if isCollection {
 			typ := strings.ToLower(string(ob.Type))
 			pieces = append(pieces, typ)
@@ -87,7 +87,7 @@ func SetID(it vocab.Item) {
 			typeCountMap[typ] = cnt
 			pieces = append(pieces, typ, strconv.Itoa(cnt))
 		}
-		ob.ID = vocab.IRI(filepath.Join(pieces...))
+		ob.ID = vocab.IRI(base + filepath.Join(pieces...))
 		return nil
 	})
 }
