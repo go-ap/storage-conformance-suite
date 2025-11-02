@@ -44,6 +44,19 @@ var (
 	someDate = time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Minute(), 0, time.UTC)
 )
 
+func clientsEqual(cl1, cl2 osin.Client) bool {
+	if cl1.GetId() != cl2.GetId() {
+		return false
+	}
+	if cl1.GetRedirectUri() != cl2.GetRedirectUri() {
+		return false
+	}
+	if cl1.GetSecret() != cl2.GetSecret() {
+		return false
+	}
+	return cmp.Equal(cl1.GetUserData(), cl2.GetUserData())
+}
+
 func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 	oStorage, ok := storage.(OSINStorage)
 	if !ok {
@@ -79,7 +92,7 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			if err != nil {
 				t.Errorf("unable to load client: %s", err)
 			}
-			if !cmp.Equal(&client, loaded) {
+			if !clientsEqual(&client, loaded) {
 				t.Errorf("invalid client returned from loading %s", cmp.Diff(&client, loaded))
 			}
 		})
@@ -92,7 +105,7 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			if len(clients) != 1 {
 				t.Fatalf("unexpected number of clients received %d, expected 1", len(clients))
 			}
-			if !cmp.Equal(&client, clients[0]) {
+			if !clientsEqual(&client, clients[0]) {
 				t.Errorf("invalid client returned from loading %s", cmp.Diff(&client, clients[0]))
 			}
 		})
@@ -108,7 +121,7 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			if err != nil {
 				t.Errorf("unable to load client: %s", err)
 			}
-			if !cmp.Equal(&toUpdate, loaded) {
+			if !clientsEqual(&toUpdate, loaded) {
 				t.Errorf("invalid client returned from loading %s", cmp.Diff(&toUpdate, loaded))
 			}
 		})
