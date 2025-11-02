@@ -57,6 +57,27 @@ func clientsEqual(cl1, cl2 osin.Client) bool {
 	return cmp.Equal(cl1.GetUserData(), cl2.GetUserData())
 }
 
+func authorizeDataEqual(a1, a2 *osin.AuthorizeData) bool {
+	if !clientsEqual(a1.Client, a2.Client) {
+		return false
+	}
+	a1.Client = nil
+	a2.Client = nil
+	return cmp.Equal(a1, a2)
+}
+
+func accessDataEqual(a1, a2 *osin.AccessData) bool {
+	if !clientsEqual(a1.Client, a2.Client) {
+		return false
+	}
+	if !authorizeDataEqual(a1.AuthorizeData, a2.AuthorizeData) {
+		return false
+	}
+	a1.Client = nil
+	a2.Client = nil
+	return cmp.Equal(a1, a2)
+}
+
 func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 	oStorage, ok := storage.(OSINStorage)
 	if !ok {
@@ -169,7 +190,7 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			if err != nil {
 				t.Errorf("unable to load authorize data: %s", err)
 			}
-			if !cmp.Equal(&auth, loaded) {
+			if !authorizeDataEqual(&auth, loaded) {
 				t.Errorf("invalid authorize data returned from loading %s", cmp.Diff(&auth, loaded))
 			}
 		})
@@ -230,7 +251,7 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			if err != nil {
 				t.Errorf("unable to load access data: %s", err)
 			}
-			if !cmp.Equal(&access, loaded) {
+			if !accessDataEqual(&access, loaded) {
 				t.Errorf("invalid access data returned from loading %s", cmp.Diff(&access, loaded))
 			}
 		})
@@ -286,7 +307,7 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			if err != nil {
 				t.Errorf("unable to load refresh data: %s", err)
 			}
-			if !cmp.Equal(&access, loaded) {
+			if !accessDataEqual(&access, loaded) {
 				t.Errorf("invalid refresh access data loaded %s", cmp.Diff(&access, loaded))
 			}
 		})
