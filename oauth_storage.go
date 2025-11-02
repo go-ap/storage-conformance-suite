@@ -239,7 +239,7 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			Scope:         "none",
 			RedirectUri:   "http://127.0.0.1",
 			CreatedAt:     someDate,
-			UserData:      "https://example.com/~johndoe",
+			UserData:      vocab.IRI("https://example.com/~johndoe"),
 		}
 		t.Run("save access data", func(t *testing.T) {
 			if err := oStorage.SaveAccess(&access); err != nil {
@@ -299,7 +299,7 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			Scope:         "none",
 			RedirectUri:   "http://127.0.0.1",
 			CreatedAt:     someDate,
-			UserData:      "https://example.com/~johndoe",
+			UserData:      vocab.IRI("https://example.com/~johndoe"),
 		}
 		_ = oStorage.SaveAccess(&access)
 		t.Run("load refresh data", func(t *testing.T) {
