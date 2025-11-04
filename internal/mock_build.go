@@ -95,7 +95,7 @@ func SetID(it vocab.Item) {
 func RandomCollection(attrTo vocab.Item) vocab.CollectionInterface {
 	col := new(vocab.OrderedCollection)
 	col.Type = vocab.OrderedCollectionType
-	col.AttributedTo = attrTo
+	col.AttributedTo = attrTo.GetLink()
 	col.Published = getRandomTime()
 	SetID(col)
 
@@ -121,7 +121,7 @@ func RandomItem(attrTo vocab.Item) vocab.Item {
 func RandomObject(attrTo vocab.Item) vocab.Item {
 	ob := new(vocab.Object)
 	ob.Type = vocab.NoteType
-	ob.AttributedTo = attrTo
+	ob.AttributedTo = attrTo.GetLink()
 	// NOTE(marius): we use random time, instead of something like time.Now()
 	// because the later contains monotonic information which gets lost at loading form the mock storage we're using
 	ob.Published = getRandomTime()
@@ -242,8 +242,8 @@ func RandomActivity(ob vocab.Item, attrTo vocab.Item) *vocab.Activity {
 	if ob != nil {
 		act.Object = ob
 	}
-	act.AttributedTo = attrTo
-	act.Actor = attrTo
+	act.AttributedTo = attrTo.GetLink()
+	act.Actor = attrTo.GetLink()
 	act.To = vocab.ItemCollection{RootID, vocab.PublicNS}
 
 	if typesNeedReasons.Contains(act.Type) {
@@ -264,7 +264,7 @@ func RandomActor(attrTo vocab.Item) vocab.Item {
 	act.Name = vocab.DefaultNaturalLanguage(names.GetRandom())
 	act.PreferredUsername = act.Name
 	act.Type = getRandomActorType()
-	act.AttributedTo = attrTo
+	act.AttributedTo = attrTo.GetLink()
 	act.Icon = RandomImage("image/png", attrTo.GetLink())
 	SetID(act)
 	return act
@@ -281,7 +281,7 @@ func RandomImage(mime vocab.MimeType, parent vocab.Item) vocab.Item {
 	img := new(vocab.Image)
 	img.Type = vocab.ImageType
 	img.MediaType = mime
-	img.AttributedTo = parent
+	img.AttributedTo = parent.GetLink()
 
 	data := getRandomContentByMimeType(mime)
 	buf := make([]byte, base64.RawStdEncoding.EncodedLen(len(data)))
