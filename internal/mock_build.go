@@ -165,12 +165,14 @@ func getObjectTypes(data []byte) (vocab.ActivityVocabularyType, vocab.MimeType) 
 		}
 	case "image/svg+xml":
 		objectType = vocab.DocumentType
-	case "video/webm", "video/mp4":
+	case "video/webm", "video/mp4", "video/mpeg":
 		objectType = vocab.VideoType
-	case "audio/mp3":
+	case "audio/mp3", "audio/mpeg", "audio/mpeg3", "application/octet-stream":
 		objectType = vocab.AudioType
-	case "image/png", "image/jpg":
+	case "image/png", "image/jpeg":
 		objectType = vocab.ImageType
+	default:
+		objectType = "Unknown"
 	}
 	return objectType, vocab.MimeType(contentType)
 }
