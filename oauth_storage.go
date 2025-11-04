@@ -84,14 +84,6 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 		t.Skipf("storage %T is not compatible with OAuth2 operations", storage)
 	}
 
-	t.Run("clone storage", func(t *testing.T) {
-		t.Skipf("%s", errNotImplemented)
-	})
-
-	t.Run("close storage", func(t *testing.T) {
-		t.Skipf("%s", errNotImplemented)
-	})
-
 	t.Run("client operations", func(t *testing.T) {
 		saver, ok := oStorage.(ClientSaver)
 		if !ok {
@@ -323,5 +315,12 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 				t.Errorf("we shouldn't be able to load deleted refresh data, received %s", cmp.Diff(nil, loaded))
 			}
 		})
+	})
+	t.Run("clone storage", func(t *testing.T) {
+		t.Skipf("%s", errNotImplemented)
+	})
+
+	t.Run("close storage", func(t *testing.T) {
+		t.Skipf("%s", errNotImplemented)
 	})
 }
