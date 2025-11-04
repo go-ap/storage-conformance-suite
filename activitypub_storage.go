@@ -223,8 +223,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 
 	t.Run(fmt.Sprintf("delete %d random objects", len(randomObjects)), func(t *testing.T) {
 		for _, ob := range randomObjects {
-			err := storage.Delete(ob)
-			if err != nil {
+			if err := storage.Delete(ob); err != nil {
 				t.Errorf("unable to save object: %s", err)
 			}
 			loadIt, err := storage.Load(ob.GetLink())

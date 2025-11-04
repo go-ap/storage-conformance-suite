@@ -45,6 +45,9 @@ var (
 )
 
 func clientsEqual(cl1, cl2 osin.Client) bool {
+	if cl1 == nil || cl2 == nil {
+		return cl1 == nil && cl2 == nil
+	}
 	if cl1.GetId() != cl2.GetId() {
 		return false
 	}
@@ -58,6 +61,9 @@ func clientsEqual(cl1, cl2 osin.Client) bool {
 }
 
 func authorizeDataEqual(a1, a2 *osin.AuthorizeData) bool {
+	if a1 == nil || a2 == nil {
+		return a1 == nil && a2 == nil
+	}
 	if !clientsEqual(a1.Client, a2.Client) {
 		return false
 	}
@@ -67,6 +73,9 @@ func authorizeDataEqual(a1, a2 *osin.AuthorizeData) bool {
 }
 
 func accessDataEqual(a1, a2 *osin.AccessData) bool {
+	if a1 == nil || a2 == nil {
+		return a1 == nil && a2 == nil
+	}
 	if !clientsEqual(a1.Client, a2.Client) {
 		return false
 	}
