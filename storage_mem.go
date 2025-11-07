@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
@@ -84,7 +85,59 @@ func (ms *memStorage) Load(i vocab.IRI, f ...filters.Check) (vocab.Item, error) 
 	return ob, nil
 }
 
+func saveCollectionIfExists(r *memStorage, it, owner vocab.Item) vocab.Item {
+	if vocab.IsNil(it) {
+		return nil
+	}
+	r.Map.LoadOrStore(it.GetLink(), createNewCollection(it.GetLink(), owner))
+	return it.GetLink()
+}
+
+func createNewCollection(colIRI vocab.IRI, owner vocab.Item) vocab.CollectionInterface  {
+	col := vocab.OrderedCollection{
+		ID:        colIRI,
+		Type:      vocab.OrderedCollectionType,
+		CC:        vocab.ItemCollection{vocab.PublicNS},
+		Published: time.Now().Truncate(time.Second).UTC(),
+	}
+	if !vocab.IsNil(owner) {
+		col.AttributedTo = owner.GetLink()
+	}
+	return &col
+}
+
+// createItemCollections
+func createItemCollections(ms *memStorage, it vocab.Item) error {
+	if vocab.IsNil(it) || !it.IsObject() {
+		return nil
+	}
+	if vocab.ActorTypes.Contains(it.GetType()) {
+		_ = vocab.OnActor(it, func(p *vocab.Actor) error {
+			p.Inbox = saveCollectionIfExists(ms, p.Inbox, p)
+			p.Outbox = saveCollectionIfExists(ms, p.Outbox, p)
+			p.Followers = saveCollectionIfExists(ms, p.Followers, p)
+			p.Following = saveCollectionIfExists(ms, p.Following, p)
+			p.Liked = saveCollectionIfExists(ms, p.Liked, p)
+			// NOTE(marius): shadow creating hidden collections for Blocked and Ignored items
+			saveCollectionIfExists(ms, filters.BlockedType.Of(p), p)
+			saveCollectionIfExists(ms, filters.IgnoredType.Of(p), p)
+			return nil
+		})
+	}
+	return vocab.OnObject(it, func(o *vocab.Object) error {
+		o.Replies = saveCollectionIfExists(ms, o.Replies, o)
+		o.Likes = saveCollectionIfExists(ms, o.Likes, o)
+		o.Shares = saveCollectionIfExists(ms, o.Shares, o)
+		return nil
+	})
+}
+
 func (ms *memStorage) Save(it vocab.Item) (vocab.Item, error) {
+	if _, ok := ms.Map.Load(it.GetLink()); !ok {
+		if err := createItemCollections(ms, it); err != nil {
+			return it, errors.Annotatef(err, "could not create object's collections")
+		}
+	}
 	ms.Map.Store(it.GetLink(), it)
 	return it, nil
 }

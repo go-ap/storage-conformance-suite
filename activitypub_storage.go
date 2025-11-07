@@ -12,16 +12,75 @@ import (
 )
 
 type ActivityPubStorage interface {
-	Load(i vocab.IRI, f ...filters.Check) (vocab.Item, error)
+	// Save saves te [vocab.Item] to storage.
+	// To conform to what the GoActivityPub library expects out of it, there are a couple of hidden behaviours:
+	// * When saving a [vocab.Object] compatible type the backend *MUST* create all the object's collections
+	// that have IRIs set. These collections are in [vocab.OfObject].
+	// Eg: For
+	//
+	//	vocab.Object{
+	//		Likes: "https://example.com/objects/1/likes",
+	//		Replies:"https://example.com/objects/1/replies",
+	//		Shares: nil
+	//	}
+	//
+	// We create the collections https://example.com/objects/1/likes, and https://example.com/objects/1/replies.
+	// * When saving a [vocab.Actor] compatible type the backend *MUST* create all the actor's collections that
+	// have IRIs set. These collections are in [vocab.OfActor].
+	// Eg: For
+	//
+	//	vocab.Actor{
+	//		Inbox:"https://example.com/~jdoe/inbox",
+	//		Outbox: "https://example.com/~jdoe/outbox",
+	//		Followers: "https://example.com/~jdoe/followers",
+	//		Following: nil
+	//	}
+	//
+	// We create the collections https://example.com/~jdoe/inbox, https://example.com/~jdoe/outbox and
+	// "https://example.com/~jdoe/followers".
 	Save(it vocab.Item) (vocab.Item, error)
+	// Load loads the item found at the "iri" [vocab.IRI].
+	// If iri points to a collection, the filters "f" get applied to the items of the collection.
+	// An implicit assumption made by filters is that when the list contains checks for one level deep properties,
+	// the storage backend loads those properties and replaces them into the original.
+	// For example if filtering in an activities collection with a check that the Actor should have a preferred username
+	// of "janeDoe", the actors of the activities need to be loaded and the check applied on them.
+	// So when the object loaded is flattened to something like this:
+	//
+	//	vocab.Activity {
+	//		Actor: "https://example.com/~jdoe" ...
+	//	}
+	//
+	// the actor gets dereferenced to:
+	//
+	//	vocab.Activity{
+	//		Actor: vocab.Actor{
+	//			ID: "https://example.com/~jdoe",
+	//			preferredUsername: "janeDoe" ...
+	//		}
+	//	}
+	//
+	// which then can be filtered with the "preferredUsername" check.
+	// The filters can also contain pagination checks, and when those get applied (see the github.com/go-ap/filtering package)
+	// the result can be different from the actual persisted value.
+	// The [filters.Checks.Paginate] method should handle most cases, so it should be enough to call it just before
+	// returning, similarly to how the local "memStorage" type does.
+	Load(iri vocab.IRI, ff ...filters.Check) (vocab.Item, error)
 	Delete(it vocab.Item) error
 
 	// Create
 	// NOTE(marius): should we remove this in favour of custom logic for Save()?
-	// (Similarly how we load items for collections in Load())
 	Create(col vocab.CollectionInterface) (vocab.CollectionInterface, error)
-	AddTo(colIRI vocab.IRI, it ...vocab.Item) error
-	RemoveFrom(colIRI vocab.IRI, it ...vocab.Item) error
+
+	// AddTo adds items to the collection.
+	// Similarly to Save(), this method needs to implement some hidden behaviour in order to conform to the expectations
+	// of the rest of GoActivityPub library when executing logic for the blocking and ignoring ActivityPub operations.
+	// In summary, when adding items to the "blocked" or "ignored" collections of a [vocab.Actor]
+	// they need to be created if missing.
+	// These two collections are called "hidden" because they do not appear as properties on the Actor,
+	// so the only way to build their IDs is to append the paths "/blocked" and "/ignored" the Actor's ID.
+	AddTo(colIRI vocab.IRI, items ...vocab.Item) error
+	RemoveFrom(colIRI vocab.IRI, items ...vocab.Item) error
 }
 
 func initActivityPub(storage ActivityPubStorage) error {
@@ -80,6 +139,9 @@ var (
  *      1. Expected collection names: inbox, outbox, followers, following, shares, liked, likes, (blocked, ignored).
  *      2. Random IRI paths without any structure to them.
  *  - Build a proper collection filter querying matrix
+ *   * Paginate a collection: maxItems, after(, before?).
+ *   * Combine Any/All filters.
+ *   * Add content filters.
  */
 
 func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
@@ -114,6 +176,52 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 			}
 			if !cmp.Equal(ob, loadIt) {
 				t.Errorf("invalid object returned from loading %s: %s", ob.GetLink(), cmp.Diff(ob, loadIt))
+			}
+
+			// NOTE(marius): check Object and Actor collections being created:
+			// @see https://todo.sr.ht/~mariusor/go-activitypub/402
+			collectionIRISToCheck := make(vocab.IRIs, 0)
+			if vocab.ActorTypes.Contains(ob.GetType()) {
+				for _, colPath := range vocab.OfActor {
+					if maybeCollection := colPath.Of(ob); !vocab.IsNil(maybeCollection) {
+						_ = collectionIRISToCheck.Append(maybeCollection.GetLink())
+					}
+				}
+				// NOTE(marius): this should be checked for AddTo() collections
+				//hiddenPaths := vocab.CollectionPaths{"blocked", "ignored"}
+				//for _, hiddenPath := range hiddenPaths {
+				//	_ = collectionIRISToCheck.Append(hiddenPath.IRI(ob))
+				//}
+			} else if !vocab.LinkTypes.Contains(ob.GetType()) {
+				for _, colPath := range vocab.OfObject {
+					if maybeCollection := colPath.Of(ob); !vocab.IsNil(maybeCollection) {
+						_ = collectionIRISToCheck.Append(maybeCollection.GetLink())
+					}
+				}
+			}
+
+			for _, itemCollection := range collectionIRISToCheck {
+				t.Run(itemCollection.String(), func(t *testing.T) {
+					loadedCol, err := storage.Load(itemCollection)
+					if err != nil {
+						t.Errorf("unable to load %s collection %s: %s", ob.GetType(), itemCollection, err)
+					}
+					err = vocab.OnCollectionIntf(loadedCol, func(col vocab.CollectionInterface) error {
+						if !col.GetLink().Equal(itemCollection) {
+							t.Errorf("invalid %s collection returned from loading %s: %s", ob.GetType(), itemCollection, loadedCol)
+						}
+						if len(col.Collection()) != 0 {
+							t.Errorf("freshly created collection should have zero items, found %d", len(col.Collection()))
+						}
+						if col.Count() != 0 {
+							t.Errorf("freshly created collection should have zero total items, found %d", col.Count())
+						}
+						return nil
+					})
+					if err != nil {
+						t.Errorf("invalid %T collection type, expected %v", loadedCol, allCollectionTypes)
+					}
+				})
 			}
 		}
 	})

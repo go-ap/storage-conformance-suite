@@ -143,6 +143,10 @@ func RandomObject(attrTo vocab.Item) vocab.Item {
 	}
 	SetID(ob)
 
+	ob.Replies = vocab.Replies.IRI(ob)
+	ob.Likes = vocab.Likes.IRI(ob)
+	ob.Shares = vocab.Shares.IRI(ob)
+
 	return ob
 }
 
@@ -269,6 +273,14 @@ func RandomActor(attrTo vocab.Item) vocab.Item {
 	act.AttributedTo = attrTo.GetLink()
 	act.Icon = RandomImage("image/png", attrTo.GetLink())
 	SetID(act)
+
+	act.Inbox = vocab.Inbox.IRI(act)
+	act.Outbox = vocab.Outbox.IRI(act)
+	act.Following = vocab.Following.IRI(act)
+	act.Followers = vocab.Followers.IRI(act)
+
+	act.Replies = vocab.Replies.IRI(act)
+
 	return act
 }
 
