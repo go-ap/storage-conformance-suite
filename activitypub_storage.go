@@ -34,6 +34,12 @@ func initActivityPub(storage ActivityPubStorage) error {
 	return nil
 }
 
+func buildPaginationFilters() []filters.Checks {
+	return []filters.Checks{
+		{filters.WithMaxCount(10)},
+	}
+}
+
 func buildTypeFilters() []filters.Checks {
 	checks := make([]filters.Checks, 0)
 	for _, typ := range vocab.Types {
@@ -57,8 +63,11 @@ func buildActivityAndObjectTypeFilters() []filters.Checks {
 	return checks
 }
 
-var byTypeFilters = buildTypeFilters()
-var byActivityObjectTypeFilters = buildActivityAndObjectTypeFilters()
+var (
+	byTypeFilters               = buildTypeFilters()
+	byActivityObjectTypeFilters = buildActivityAndObjectTypeFilters()
+	withPagination              = buildPaginationFilters()
+)
 
 /*
  * TODO
@@ -163,7 +172,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				t.Errorf("loaded object wasn't a collection %s: %s", colIRI, err)
 			}
 		})
-		queryFilters := append(byTypeFilters, byActivityObjectTypeFilters...)
+		queryFilters := append(withPagination, append(byTypeFilters, byActivityObjectTypeFilters...)...)
 		for _, fil := range queryFilters {
 			t.Run(fmt.Sprintf("query collection with filters %s", fil), func(t *testing.T) {
 				loadIt, err := storage.Load(colIRI, fil...)
