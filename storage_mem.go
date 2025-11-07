@@ -69,16 +69,15 @@ func (ms *memStorage) Load(i vocab.IRI, f ...filters.Check) (vocab.Item, error) 
 	}
 
 	if len(f) > 0 {
-		if orderedCollectionTypes.Contains(ob.GetType()) {
+		switch ob.GetType() {
+		case vocab.OrderedCollectionType, vocab.OrderedCollectionPageType:
 			clone, _ := ob.(*vocab.OrderedCollection)
 			obCopy := *clone
-			filters.Checks(f).Run(&obCopy)
-			ob = obCopy
-		} else {
+			ob = filters.Checks(f).Run(&obCopy)
+		case vocab.CollectionType, vocab.CollectionPageType:
 			clone, _ := ob.(*vocab.Collection)
 			obCopy := *clone
-			filters.Checks(f).Run(&obCopy)
-			ob = obCopy
+			ob = filters.Checks(f).Run(&obCopy)
 		}
 	}
 
