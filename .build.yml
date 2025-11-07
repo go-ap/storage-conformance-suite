@@ -12,3 +12,23 @@ tasks:
       cd storage-fs
       go mod tidy
       go test -tags conformance -cover -race -count=1 -json ./... | go run github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt -showteststatus
+  - storage-boltdb: |
+      git clone https://github.com/go-ap/storage-boltdb
+      cd storage-boltdb
+      go mod tidy
+      go test -tags conformance -cover -race -count=1 -json ./... | go run github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt -showteststatus
+  - storage-badger: |
+      git clone https://github.com/go-ap/storage-badger
+      cd storage-badger
+      go mod tidy
+      go test -tags conformance -cover -race -count=1 -json ./... | go run github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt -showteststatus
+  - storage-sqlite: |
+      git clone https://github.com/go-ap/storage-sqlite
+      cd storage-sqlite
+      go mod tidy
+      go test -tags conformance -cover -race -count=1 -json ./... | go run github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt -showteststatus
+  - storage-sqlite-v2: |
+      git clone https://git.sr.ht/~mariusor/storage-sqlite
+      cd storage-sqlite
+      go mod tidy
+      go test -tags conformance -cover -race -count=1 -json ./... | go run github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt -showteststatus
