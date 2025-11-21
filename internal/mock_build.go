@@ -187,7 +187,7 @@ func SortItemCollectionByID(items vocab.ItemCollection) {
 	})
 }
 
-func GetRandomItemCollection(count int) vocab.ItemCollection {
+func RandomItemCollection(count int) vocab.ItemCollection {
 	items := make(vocab.ItemCollection, 0, count)
 	for range count {
 		items = append(items, RandomItem(Root))
