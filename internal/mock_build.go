@@ -68,7 +68,7 @@ func getRandomTime() time.Time {
 
 var typeCountMap = make(map[string]int)
 
-func SetID(it vocab.Item) {
+var SetItemID = func(it vocab.Item) {
 	_ = vocab.OnObject(it, func(ob *vocab.Object) error {
 		isCollection := it.IsCollection()
 		pieces := make([]string, 0)
@@ -97,7 +97,7 @@ func RandomCollection(attrTo vocab.Item) vocab.CollectionInterface {
 	col.Type = vocab.OrderedCollectionType
 	col.AttributedTo = attrTo.GetLink()
 	col.Published = getRandomTime()
-	SetID(col)
+	SetItemID(col)
 
 	return col
 }
@@ -141,7 +141,7 @@ func RandomObject(attrTo vocab.Item) vocab.Item {
 		}
 		ob.Content = vocab.DefaultNaturalLanguage(string(data))
 	}
-	SetID(ob)
+	SetItemID(ob)
 
 	ob.Replies = vocab.Replies.IRI(ob)
 	ob.Likes = vocab.Likes.IRI(ob)
@@ -256,7 +256,7 @@ func RandomActivity(ob vocab.Item, attrTo vocab.Item) *vocab.Activity {
 		act.Content = vocab.DefaultNaturalLanguage(getRandomReason())
 		act.Summary = vocab.DefaultNaturalLanguage(getRandomReason())
 	}
-	SetID(act)
+	SetItemID(act)
 
 	return act
 }
@@ -272,7 +272,7 @@ func RandomActor(attrTo vocab.Item) vocab.Item {
 	act.Type = getRandomActorType()
 	act.AttributedTo = attrTo.GetLink()
 	act.Icon = RandomImage("image/png", attrTo.GetLink())
-	SetID(act)
+	SetItemID(act)
 
 	act.Inbox = vocab.Inbox.IRI(act)
 	act.Outbox = vocab.Outbox.IRI(act)
@@ -301,7 +301,7 @@ func RandomImage(mime vocab.MimeType, parent vocab.Item) vocab.Item {
 	buf := make([]byte, base64.RawStdEncoding.EncodedLen(len(data)))
 	base64.RawStdEncoding.Encode(buf, data)
 	img.Content = vocab.DefaultNaturalLanguage(string(buf))
-	SetID(img)
+	SetItemID(img)
 	return img
 }
 
