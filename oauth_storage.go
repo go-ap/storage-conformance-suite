@@ -231,18 +231,32 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			UserData:    vocab.IRI("https://example.com/~johndoe"),
 		}
 		_ = oStorage.SaveAuthorize(&auth)
+		//refresh := osin.AccessData{
+		//	Client:        &client,
+		//	AuthorizeData: &auth,
+		//	AccessToken:   "s0fresh",
+		//	ExpiresIn:     int32(time.Hour.Seconds()),
+		//	Scope:         "none",
+		//	RedirectUri:   "http://127.0.0.1",
+		//	CreatedAt:     someDate,
+		//	UserData:      vocab.IRI("https://example.com/~johndoe"),
+		//}
 		access := osin.AccessData{
 			Client:        &client,
 			AuthorizeData: &auth,
-			AccessToken:   "f00b4r",
-			RefreshToken:  "s0fresh",
-			ExpiresIn:     int32(time.Hour.Seconds()),
-			Scope:         "none",
-			RedirectUri:   "http://127.0.0.1",
-			CreatedAt:     someDate,
-			UserData:      vocab.IRI("https://example.com/~johndoe"),
+			//AccessData:    &refresh,
+			AccessToken:  "f00b4r",
+			RefreshToken: "s0fresh",
+			ExpiresIn:    int32(time.Hour.Seconds()),
+			Scope:        "none",
+			RedirectUri:  "http://127.0.0.1",
+			CreatedAt:    someDate,
+			UserData:     vocab.IRI("https://example.com/~johndoe"),
 		}
 		t.Run("save access data", func(t *testing.T) {
+			//if err := oStorage.SaveAccess(&refresh); err != nil {
+			//	t.Errorf("unable to save access data: %s", err)
+			//}
 			if err := oStorage.SaveAccess(&access); err != nil {
 				t.Errorf("unable to save access data: %s", err)
 			}
@@ -308,7 +322,7 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			if err != nil {
 				t.Errorf("unable to load refresh data: %s", err)
 			}
-			if !accessDataEqual(&access, loaded) {
+			if !cmp.Equal(&access, loaded) {
 				t.Errorf("invalid refresh access data loaded %s", cmp.Diff(&access, loaded))
 			}
 		})
