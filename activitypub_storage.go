@@ -187,7 +187,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 						_ = collectionIRISToCheck.Append(maybeCollection.GetLink())
 					}
 				}
-				// NOTE(marius): this should be checked for AddTo() collections
+				// //TODO(marius): this should be checked for AddTo() collections
 				//hiddenPaths := vocab.CollectionPaths{"blocked", "ignored"}
 				//for _, hiddenPath := range hiddenPaths {
 				//	_ = collectionIRISToCheck.Append(hiddenPath.IRI(ob))

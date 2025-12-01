@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"mime"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -42,6 +43,19 @@ var (
 		PreferredUsername: vocab.DefaultNaturalLanguage("root"),
 	}
 )
+
+func getContentByType(typ vocab.ActivityVocabularyType) []byte {
+	validArray := make([][]byte, 0)
+	for _, files := range ContentMap {
+		for _, file := range files {
+			validArray = append(validArray, file)
+		}
+	}
+	if len(validArray) == 0 {
+		return nil
+	}
+	return validArray[rand.Int()%len(validArray)]
+}
 
 func getRandomContent() []byte {
 	validArray := make([][]byte, 0)
@@ -112,10 +126,43 @@ func RandomItem(attrTo vocab.Item) vocab.Item {
 			return RandomActivity(RandomObject(attrTo), attrTo)
 		},
 		RandomLink,
+		RandomQuestion,
 	}
 
 	fn := genFns[rand.Intn(len(genFns))]
 	return fn(attrTo)
+}
+
+func RandomObjectByType(attrTo vocab.Item, typ vocab.ActivityVocabularyType) vocab.Item {
+	ob := new(vocab.Object)
+	ob.Type = typ
+	ob.AttributedTo = attrTo.GetLink()
+	// NOTE(marius): we use random time, instead of something like time.Now()
+	// because the later contains monotonic information which gets lost at loading form the mock storage we're using
+	ob.Published = getRandomTime()
+
+	ob.Content = vocab.DefaultNaturalLanguage("no data")
+	if data := getContentByType(typ); len(data) > 0 {
+		typ, mt := getObjectTypes(data)
+		ob.Type = typ
+		ob.MediaType = mt
+
+		if !strings.Contains(string(mt), "text") {
+			buf := make([]byte, base64.RawStdEncoding.EncodedLen(len(data)))
+			base64.RawStdEncoding.Encode(buf, data)
+			data = buf
+		} else {
+			ob.Summary = vocab.DefaultNaturalLanguage(string(data[:bytes.Index(data, []byte{'.'})]))
+		}
+		ob.Content = vocab.DefaultNaturalLanguage(string(data))
+	}
+	SetItemID(ob)
+
+	ob.Replies = vocab.Replies.IRI(ob)
+	ob.Likes = vocab.Likes.IRI(ob)
+	ob.Shares = vocab.Shares.IRI(ob)
+
+	return ob
 }
 
 func RandomObject(attrTo vocab.Item) vocab.Item {
@@ -242,7 +289,7 @@ func getActivityTypeByObject(ob vocab.Item) vocab.ActivityVocabularyType {
 	return validForObjectActivityTypes[rand.Int()%len(validForObjectActivityTypes)]
 }
 
-func RandomActivity(ob vocab.Item, attrTo vocab.Item) *vocab.Activity {
+func RandomActivity(ob vocab.Item, attrTo vocab.Item) vocab.Item {
 	act := new(vocab.Activity)
 	act.Type = getActivityTypeByObject(ob)
 	if ob != nil {
@@ -256,6 +303,24 @@ func RandomActivity(ob vocab.Item, attrTo vocab.Item) *vocab.Activity {
 		act.Content = vocab.DefaultNaturalLanguage(getRandomReason())
 		act.Summary = vocab.DefaultNaturalLanguage(getRandomReason())
 	}
+	SetItemID(act)
+
+	return act
+}
+
+func RandomQuestion(attrTo vocab.Item) vocab.Item {
+	act := new(vocab.Question)
+	act.Type = vocab.QuestionType
+
+	act.AttributedTo = attrTo.GetLink()
+	act.Actor = attrTo.GetLink()
+	act.To = vocab.ItemCollection{RootID, vocab.PublicNS}
+
+	if typesNeedReasons.Contains(act.Type) {
+		act.Content = vocab.DefaultNaturalLanguage(getRandomReason())
+		act.Summary = vocab.DefaultNaturalLanguage(getRandomReason())
+	}
+	act.OneOf = RandomCollection(attrTo)
 	SetItemID(act)
 
 	return act
@@ -289,6 +354,14 @@ func getRandomContentByMimeType(mimeType vocab.MimeType) []byte {
 		return validArray.First()
 	}
 	return nil
+}
+
+func RandomTag(parent vocab.Item) vocab.Item {
+	tag := new(vocab.Object)
+	tag.AttributedTo = parent.GetLink()
+	tag.Name = vocab.DefaultNaturalLanguage("#test")
+	tag.ID = parent.GetLink().AddPath("tags").AddPath(url.PathEscape("#test"))
+	return tag
 }
 
 func RandomImage(mime vocab.MimeType, parent vocab.Item) vocab.Item {

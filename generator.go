@@ -9,6 +9,10 @@ func RandomLink(attrTo vocab.Item) vocab.Item {
 	return internal.RandomLink(attrTo)
 }
 
+func RandomTag(parent vocab.Item) vocab.Item {
+	return internal.RandomTag(parent)
+}
+
 func RandomObject(parent vocab.Item) vocab.Item {
 	return internal.RandomObject(parent)
 }
