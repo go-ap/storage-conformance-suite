@@ -93,7 +93,7 @@ func saveCollectionIfExists(r *memStorage, it, owner vocab.Item) vocab.Item {
 	return it.GetLink()
 }
 
-func createNewCollection(colIRI vocab.IRI, owner vocab.Item) vocab.CollectionInterface  {
+func createNewCollection(colIRI vocab.IRI, owner vocab.Item) vocab.CollectionInterface {
 	col := vocab.OrderedCollection{
 		ID:        colIRI,
 		Type:      vocab.OrderedCollectionType,
