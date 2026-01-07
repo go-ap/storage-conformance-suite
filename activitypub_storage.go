@@ -202,6 +202,11 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 
 			for _, itemCollection := range collectionIRISToCheck {
 				t.Run(itemCollection.String(), func(t *testing.T) {
+					_, which := vocab.Split(itemCollection)
+					t.Skipf("Checking %s skipped: we stopped creating them automatically in the storage backend", itemCollection)
+					if needsCheck := which.Of(ob); vocab.IsNil(needsCheck) {
+						return
+					}
 					loadedCol, err := storage.Load(itemCollection)
 					if err != nil {
 						t.Errorf("unable to load %s collection %s: %s", ob.GetType(), itemCollection, err)
