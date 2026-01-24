@@ -3,13 +3,13 @@ module github.com/go-ap/storage-conformance-suite
 go 1.25
 
 require (
-	github.com/go-ap/activitypub v0.0.0-20251229135531-ed9c5f603bba
+	github.com/go-ap/activitypub v0.0.0-20260123105353-38736987d071
 	github.com/go-ap/errors v0.0.0-20251229095444-2702aa2d8569
-	github.com/go-ap/filters v0.0.0-20251229135628-42af05c677ee
+	github.com/go-ap/filters v0.0.0-20260124112747-f1400f81a7a6
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20210113124101-8612686d6dda
 	golang.org/x/crypto v0.43.0
-	golang.org/x/text v0.32.0
+	golang.org/x/text v0.33.0
 )
 
 require (

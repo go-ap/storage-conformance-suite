@@ -318,6 +318,54 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				}
 			})
 		}
+		for idx := range len(randomObjects) + 1 {
+			cnt := idx + 1
+			checks := filters.Checks{filters.WithMaxCount(cnt)}
+			t.Run(fmt.Sprintf("traverse collection with pagination %d", cnt), func(t *testing.T) {
+				for range len(randomObjects) / cnt {
+					t.Run(fmt.Sprintf("query collection with filters %s", checks), func(t *testing.T) {
+						loadIt, err := storage.Load(colIRI, checks...)
+						if err != nil {
+							t.Errorf("unable to load collection %s: %s", colIRI, err)
+						}
+						var foundItems vocab.ItemCollection
+						var totalItems uint
+						err = vocab.OnOrderedCollection(loadIt, func(col *vocab.OrderedCollection) error {
+							foundItems = col.OrderedItems
+							totalItems = col.TotalItems
+							return nil
+						})
+						if err != nil {
+							t.Errorf("loaded object wasn't a collection %s: %s", colIRI, err)
+						}
+						filteredRandomObjects := checks.Run(randomObjects)
+						filteredItems, ok := filteredRandomObjects.(vocab.ItemCollection)
+						if !ok {
+							t.Fatalf("filtered items are not compatible with an Item Collection %T", filteredRandomObjects)
+						}
+						if totalItems != uint(len(randomObjects)) {
+							t.Fatalf("invalid collection total items count returned from loading %d, expected %d", totalItems, len(randomObjects))
+						}
+						if len(filteredItems) != len(foundItems) {
+							t.Fatalf("invalid collection item counts returned from loading %d, expected %d", len(foundItems), len(filteredItems))
+						}
+						if !cmp.Equal(foundItems, filteredItems) {
+							t.Errorf("invalid items returned from loading: %s", cmp.Diff(foundItems, filteredItems))
+						}
+						if len(filteredItems) != cnt {
+							t.Fatalf("invalid collection item counts returned from loading %d, expected %d", len(foundItems), cnt)
+						}
+						_ = vocab.OnCollectionIntf(loadIt, func(col vocab.CollectionInterface) error {
+							nextIRI := filters.NextPageFromCollection(col).GetLink()
+							if !colIRI.Equal(nextIRI) {
+								checks, _ = filters.FromIRI(nextIRI)
+							}
+							return nil
+						})
+					})
+				}
+			})
+		}
 
 		t.Run(fmt.Sprintf("remove %d items from collection", randomObjects.Count()), func(t *testing.T) {
 			if err = storage.RemoveFrom(colIRI, randomObjects...); err != nil {
