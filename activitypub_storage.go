@@ -181,7 +181,8 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 			// NOTE(marius): check Object and Actor collections being created:
 			// @see https://todo.sr.ht/~mariusor/go-activitypub/402
 			collectionIRISToCheck := make(vocab.IRIs, 0)
-			if vocab.ActorTypes.Contains(ob.GetType()) {
+			typ := ob.GetType()
+			if vocab.ActorTypes.Match(typ) {
 				for _, colPath := range vocab.OfActor {
 					if maybeCollection := colPath.Of(ob); !vocab.IsNil(maybeCollection) {
 						_ = collectionIRISToCheck.Append(maybeCollection.GetLink())
@@ -192,7 +193,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				//for _, hiddenPath := range hiddenPaths {
 				//	_ = collectionIRISToCheck.Append(hiddenPath.IRI(ob))
 				//}
-			} else if !vocab.LinkTypes.Contains(ob.GetType()) {
+			} else if !vocab.LinkTypes.Match(typ) {
 				for _, colPath := range vocab.OfObject {
 					if maybeCollection := colPath.Of(ob); !vocab.IsNil(maybeCollection) {
 						_ = collectionIRISToCheck.Append(maybeCollection.GetLink())

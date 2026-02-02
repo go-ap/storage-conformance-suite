@@ -69,20 +69,22 @@ func (ms *memStorage) Load(i vocab.IRI, f ...filters.Check) (vocab.Item, error) 
 		return nil, errors.Newf("invalid item type in storage %T", raw)
 	}
 
-	if len(f) > 0 {
-		switch ob.GetType() {
-		case vocab.OrderedCollectionType, vocab.OrderedCollectionPageType:
-			clone, _ := ob.(*vocab.OrderedCollection)
-			obCopy := *clone
-			ob = filters.Checks(f).Run(&obCopy)
-		case vocab.CollectionType, vocab.CollectionPageType:
-			clone, _ := ob.(*vocab.Collection)
-			obCopy := *clone
-			ob = filters.Checks(f).Run(&obCopy)
-		}
+	if len(f) == 0 {
+		return ob, nil
 	}
-
-	return ob, nil
+	typ := ob.GetType()
+	switch {
+	case vocab.ActivityVocabularyTypes{vocab.OrderedCollectionType, vocab.OrderedCollectionPageType}.Match(typ):
+		clone, _ := ob.(*vocab.OrderedCollection)
+		obCopy := *clone
+		return filters.Checks(f).Run(&obCopy), nil
+	case vocab.ActivityVocabularyTypes{vocab.CollectionType, vocab.CollectionPageType}.Match(typ):
+		clone, _ := ob.(*vocab.Collection)
+		obCopy := *clone
+		return filters.Checks(f).Run(&obCopy), nil
+	default:
+		return ob, nil
+	}
 }
 
 func saveCollectionIfExists(r *memStorage, it, owner vocab.Item) vocab.Item {
@@ -111,7 +113,7 @@ func createItemCollections(ms *memStorage, it vocab.Item) error {
 	if vocab.IsNil(it) || !it.IsObject() {
 		return nil
 	}
-	if vocab.ActorTypes.Contains(it.GetType()) {
+	if vocab.ActorTypes.Match(it.GetType()) {
 		_ = vocab.OnActor(it, func(p *vocab.Actor) error {
 			p.Inbox = saveCollectionIfExists(ms, p.Inbox, p)
 			p.Outbox = saveCollectionIfExists(ms, p.Outbox, p)

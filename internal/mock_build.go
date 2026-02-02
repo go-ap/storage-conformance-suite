@@ -82,6 +82,16 @@ func getRandomTime() time.Time {
 
 var typeCountMap = make(map[string]int)
 
+func typeAsString(typ vocab.Typer) string {
+	if tt, ok := typ.(vocab.ActivityVocabularyType); ok {
+		return string(tt)
+	}
+	if tt, ok := typ.(vocab.ActivityVocabularyTypes); ok && len(tt) > 0 {
+		return string(tt[0])
+	}
+	return "unknown"
+}
+
 var SetItemID = func(it vocab.Item) {
 	_ = vocab.OnObject(it, func(ob *vocab.Object) error {
 		isCollection := it.IsCollection()
@@ -92,10 +102,10 @@ var SetItemID = func(it vocab.Item) {
 		}
 		pieces = append(pieces, "/")
 		if isCollection {
-			typ := strings.ToLower(string(ob.Type))
+			typ := strings.ToLower(typeAsString(ob.Type))
 			pieces = append(pieces, typ)
 		} else {
-			typ := strings.ToLower(string(ob.Type))
+			typ := strings.ToLower(typeAsString(ob.Type))
 			cnt, _ := typeCountMap[typ]
 			cnt++
 			typeCountMap[typ] = cnt
@@ -280,10 +290,11 @@ func getActivityTypeByObject(ob vocab.Item) vocab.ActivityVocabularyType {
 	if vocab.IsNil(ob) {
 		return validForObjectActivityTypes[rand.Int()%len(validForObjectActivityTypes)]
 	}
-	if vocab.ActivityTypes.Contains(ob.GetType()) {
+	typ := ob.GetType()
+	if vocab.ActivityTypes.Match(typ) {
 		return validForActivityActivityTypes[rand.Int()%len(validForActivityActivityTypes)]
 	}
-	if vocab.ActorTypes.Contains(ob.GetType()) {
+	if vocab.ActorTypes.Match(typ) {
 		return validForActorActivityTypes[rand.Int()%len(validForActorActivityTypes)]
 	}
 	return validForObjectActivityTypes[rand.Int()%len(validForObjectActivityTypes)]
@@ -299,7 +310,7 @@ func RandomActivity(ob vocab.Item, attrTo vocab.Item) vocab.Item {
 	act.Actor = attrTo.GetLink()
 	act.To = vocab.ItemCollection{RootID, vocab.PublicNS}
 
-	if typesNeedReasons.Contains(act.Type) {
+	if typesNeedReasons.Match(act.Type) {
 		act.Content = vocab.DefaultNaturalLanguage(getRandomReason())
 		act.Summary = vocab.DefaultNaturalLanguage(getRandomReason())
 	}
@@ -316,7 +327,7 @@ func RandomQuestion(attrTo vocab.Item) vocab.Item {
 	act.Actor = attrTo.GetLink()
 	act.To = vocab.ItemCollection{RootID, vocab.PublicNS}
 
-	if typesNeedReasons.Contains(act.Type) {
+	if typesNeedReasons.Match(act.Type) {
 		act.Content = vocab.DefaultNaturalLanguage(getRandomReason())
 		act.Summary = vocab.DefaultNaturalLanguage(getRandomReason())
 	}
