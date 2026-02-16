@@ -224,7 +224,7 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 
 		auth := osin.AuthorizeData{
 			Client:              &client,
-			Code:                "xx44aa1!",
+			Code:                "yy44aa1!",
 			ExpiresIn:           int32(time.Hour.Seconds()),
 			Scope:               "none",
 			RedirectUri:         "http://127.0.0.1",
