@@ -172,14 +172,16 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 		}
 
 		auth := osin.AuthorizeData{
-			Client:      &client,
-			Code:        "xx44aa1!",
-			ExpiresIn:   int32(time.Hour.Seconds()),
-			Scope:       "none",
-			RedirectUri: "http://127.0.0.1",
-			State:       "no-state",
-			CreatedAt:   someDate,
-			UserData:    vocab.IRI("https://example.com/~johndoe"),
+			Client:              &client,
+			Code:                "xx44aa1!",
+			ExpiresIn:           int32(time.Hour.Seconds()),
+			Scope:               "none",
+			RedirectUri:         "http://127.0.0.1",
+			State:               "no-state",
+			CreatedAt:           someDate,
+			UserData:            vocab.IRI("https://example.com/~johndoe"),
+			CodeChallengeMethod: "S256",
+			CodeChallenge:       "1000000000000000000000000000000000000000666",
 		}
 		t.Run("save authorize", func(t *testing.T) {
 			if err := oStorage.SaveAuthorize(&auth); err != nil {
@@ -221,14 +223,16 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 		}
 
 		auth := osin.AuthorizeData{
-			Client:      &client,
-			Code:        "xx44aa1!",
-			ExpiresIn:   int32(time.Hour.Seconds()),
-			Scope:       "none",
-			RedirectUri: "http://127.0.0.1",
-			State:       "no-state",
-			CreatedAt:   someDate,
-			UserData:    vocab.IRI("https://example.com/~johndoe"),
+			Client:              &client,
+			Code:                "xx44aa1!",
+			ExpiresIn:           int32(time.Hour.Seconds()),
+			Scope:               "none",
+			RedirectUri:         "http://127.0.0.1",
+			State:               "no-state",
+			CreatedAt:           someDate,
+			UserData:            vocab.IRI("https://example.com/~johndoe"),
+			CodeChallengeMethod: "S256",
+			CodeChallenge:       "1000000000000000000000000000000000000000666",
 		}
 		_ = oStorage.SaveAuthorize(&auth)
 		//refresh := osin.AccessData{
