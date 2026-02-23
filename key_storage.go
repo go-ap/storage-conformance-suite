@@ -16,7 +16,7 @@ import (
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/storage-conformance-suite/internal"
+	"github.com/go-ap/storage-conformance-suite/gen"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -32,14 +32,14 @@ var (
 )
 
 func initKeyStorage(storage KeyStorage) error {
-	pk, err := storage.SaveKey(internal.RootID, privateKey)
+	pk, err := storage.SaveKey(gen.RootID, privateKey)
 	if err != nil {
 		return err
 	}
-	internal.Root.PublicKey = *pk
+	gen.Root.PublicKey = *pk
 	apStorage, ok := storage.(ActivityPubStorage)
 	if ok {
-		_, _ = apStorage.Save(internal.Root)
+		_, _ = apStorage.Save(gen.Root)
 	}
 	return nil
 }
@@ -54,20 +54,20 @@ func RunKeyTests(t *testing.T, storage ActivityPubStorage) {
 	}
 
 	t.Run("load Root key", func(t *testing.T) {
-		prv, err := keyStorage.LoadKey(internal.RootID)
+		prv, err := keyStorage.LoadKey(gen.RootID)
 		if err != nil {
 			t.Fatalf("unable to load private key %s", err)
 		}
 		if !cmp.Equal(privateKey, prv) {
 			t.Errorf("Loaded private key is different %s", cmp.Diff(privateKey, prv))
 		}
-		actor, err := storage.Load(internal.RootID)
+		actor, err := storage.Load(gen.RootID)
 		if err != nil {
 			t.Fatalf("unable to load actor item %s", err)
 		}
 		err = vocab.OnActor(actor, func(actor *vocab.Actor) error {
-			if !cmp.Equal(actor.PublicKey, internal.Root.PublicKey) {
-				t.Errorf("invalid root actor public key loaded from storage %s", cmp.Diff(internal.Root.PublicKey, actor.PublicKey))
+			if !cmp.Equal(actor.PublicKey, gen.Root.PublicKey) {
+				t.Errorf("invalid root actor public key loaded from storage %s", cmp.Diff(gen.Root.PublicKey, actor.PublicKey))
 			}
 
 			pub, ok := publicKey(prv)
@@ -90,13 +90,13 @@ func RunKeyTests(t *testing.T, storage ActivityPubStorage) {
 			return nil
 		})
 		if err != nil {
-			t.Fatalf("the item loaded for %s couldn't be converted to Actor: %s", internal.RootID, err)
+			t.Fatalf("the item loaded for %s couldn't be converted to Actor: %s", gen.RootID, err)
 		}
 	})
 
 	for _, key := range keys {
 		t.Run(fmt.Sprintf("save %T key", key), func(t *testing.T) {
-			it := internal.RandomActor(internal.RootID)
+			it := gen.RandomActor(gen.RootID)
 			actor, err := vocab.ToActor(it)
 			if err != nil {
 				t.Fatalf("unable to generate random actor: %s", err)
@@ -141,7 +141,7 @@ func RunKeyTests(t *testing.T, storage ActivityPubStorage) {
 					return nil
 				})
 				if err != nil {
-					t.Fatalf("the item loaded for %s couldn't be converted to Actor: %s", internal.RootID, err)
+					t.Fatalf("the item loaded for %s couldn't be converted to Actor: %s", gen.RootID, err)
 				}
 			})
 		})

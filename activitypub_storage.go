@@ -7,7 +7,7 @@ import (
 	vocab "github.com/go-ap/activitypub"
 	"github.com/go-ap/errors"
 	"github.com/go-ap/filters"
-	"github.com/go-ap/storage-conformance-suite/internal"
+	"github.com/go-ap/storage-conformance-suite/gen"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -87,7 +87,7 @@ func initActivityPub(storage ActivityPubStorage) error {
 	if storage == nil {
 		return errNilStorage
 	}
-	if _, err := storage.Save(internal.Root); err != nil {
+	if _, err := storage.Save(gen.Root); err != nil {
 		return err
 	}
 	return nil
@@ -151,16 +151,16 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 
 	// Load root item
 	t.Run("Load Root item", func(t *testing.T) {
-		it, err := storage.Load(internal.RootID)
+		it, err := storage.Load(gen.RootID)
 		if err != nil {
 			t.Errorf("unable to load root item: %s", err)
 		}
-		if !cmp.Equal(internal.Root, it) {
-			t.Errorf("invalid root actor loaded from storage %s", cmp.Diff(internal.Root, it))
+		if !cmp.Equal(gen.Root, it) {
+			t.Errorf("invalid root actor loaded from storage %s", cmp.Diff(gen.Root, it))
 		}
 	})
 
-	randomObjects := internal.RandomItemCollection(48)
+	randomObjects := gen.RandomItemCollection(48)
 	t.Run(fmt.Sprintf("save %d random objects", len(randomObjects)), func(t *testing.T) {
 		for _, ob := range randomObjects {
 			savedIt, err := storage.Save(ob)
@@ -232,7 +232,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 		}
 	})
 
-	col := internal.RandomCollection(internal.Root)
+	col := gen.RandomCollection(gen.Root)
 	_ = vocab.OnObject(col, func(ob *vocab.Object) error {
 		// NOTE(marius): this is a corner case for the storage-fs backend which doesn't work well with collections
 		// that don't have IRIs ending in the traditional collection names (inbox, outbox, followers, etc)
@@ -273,8 +273,8 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				if len(savedItems) != len(randomObjects) {
 					t.Fatalf("invalid collection item counts returned from loading %d, expected %d", len(savedItems), len(randomObjects))
 				}
-				internal.SortItemCollectionByID(randomObjects)
-				internal.SortItemCollectionByID(savedItems)
+				gen.SortItemCollectionByID(randomObjects)
+				gen.SortItemCollectionByID(savedItems)
 				for i, it := range randomObjects {
 					if !cmp.Equal(it, savedItems[i]) {
 						t.Errorf("invalid item at pos %d, unable: %s", i, cmp.Diff(it, savedItems[i]))

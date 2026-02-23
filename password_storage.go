@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/storage-conformance-suite/internal"
+	"github.com/go-ap/storage-conformance-suite/gen"
 )
 
 type PasswordStorage interface {
@@ -15,7 +15,7 @@ type PasswordStorage interface {
 var rootPw = []byte("notSoSecretP4ssw0rd")
 
 func initPasswordStorage(storage PasswordStorage) error {
-	err := storage.PasswordSet(internal.RootID, rootPw)
+	err := storage.PasswordSet(gen.RootID, rootPw)
 	if err != nil {
 		return err
 	}
@@ -34,7 +34,7 @@ func RunPasswordTests(t *testing.T, storage ActivityPubStorage) {
 	}
 
 	t.Run("check Root password", func(t *testing.T) {
-		if err := pwStorage.PasswordCheck(internal.RootID, rootPw); err != nil {
+		if err := pwStorage.PasswordCheck(gen.RootID, rootPw); err != nil {
 			t.Errorf("unable to validate root password: %s", err)
 		}
 	})

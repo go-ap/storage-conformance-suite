@@ -15,7 +15,7 @@ import (
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/storage-conformance-suite/internal"
+	"github.com/go-ap/storage-conformance-suite/gen"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -151,13 +151,13 @@ func RunMetadataTests(t *testing.T, storage ActivityPubStorage) {
 			Key: getPrivateKey(),
 		}
 		t.Run(fmt.Sprintf("store %T", toSave), func(t *testing.T) {
-			if err := mStorage.SaveMetadata(internal.RootID, toSave); err != nil {
+			if err := mStorage.SaveMetadata(gen.RootID, toSave); err != nil {
 				t.Errorf("unable to save Metadata %T: %s", toSave, err)
 			}
 
 			loadInto := PassAndKeyMetadata{}
-			if err := mStorage.LoadMetadata(internal.RootID, &loadInto); err != nil {
-				t.Errorf("unable to load metadata %T for iri %s: %s", toSave, internal.RootID, err)
+			if err := mStorage.LoadMetadata(gen.RootID, &loadInto); err != nil {
+				t.Errorf("unable to load metadata %T for iri %s: %s", toSave, gen.RootID, err)
 			}
 			if !cmp.Equal(toSave, loadInto) {
 				t.Errorf("loaded metadata is not equal: %s", cmp.Diff(toSave, loadInto))
@@ -167,13 +167,13 @@ func RunMetadataTests(t *testing.T, storage ActivityPubStorage) {
 	{
 		toStore := struct{ A string }{A: "lorem ipsum, dolor sic amet"}
 		t.Run(fmt.Sprintf("store %T", toStore), func(t *testing.T) {
-			if err := mStorage.SaveMetadata(internal.RootID, toStore); err != nil {
+			if err := mStorage.SaveMetadata(gen.RootID, toStore); err != nil {
 				t.Errorf("unable to save Metadata %T: %s", toStore, err)
 			}
 
 			loadInto := struct{ A string }{}
-			if err := mStorage.LoadMetadata(internal.RootID, &loadInto); err != nil {
-				t.Errorf("unable to load metadata %T for iri %s: %s", toStore, internal.RootID, err)
+			if err := mStorage.LoadMetadata(gen.RootID, &loadInto); err != nil {
+				t.Errorf("unable to load metadata %T for iri %s: %s", toStore, gen.RootID, err)
 			}
 			if !cmp.Equal(toStore, loadInto) {
 				t.Errorf("loaded metadata is not equal: %s", cmp.Diff(toStore, loadInto))
@@ -183,13 +183,13 @@ func RunMetadataTests(t *testing.T, storage ActivityPubStorage) {
 	{
 		toStore := 6666
 		t.Run(fmt.Sprintf("store %T", toStore), func(t *testing.T) {
-			if err := mStorage.SaveMetadata(internal.RootID, toStore); err != nil {
+			if err := mStorage.SaveMetadata(gen.RootID, toStore); err != nil {
 				t.Errorf("unable to save Metadata %T: %s", toStore, err)
 			}
 
 			var loadInto int
-			if err := mStorage.LoadMetadata(internal.RootID, &loadInto); err != nil {
-				t.Errorf("unable to load metadata %T for iri %s: %s", toStore, internal.RootID, err)
+			if err := mStorage.LoadMetadata(gen.RootID, &loadInto); err != nil {
+				t.Errorf("unable to load metadata %T for iri %s: %s", toStore, gen.RootID, err)
 			}
 			if !cmp.Equal(toStore, loadInto) {
 				t.Errorf("loaded metadata is not equal: %s", cmp.Diff(toStore, loadInto))
@@ -199,13 +199,13 @@ func RunMetadataTests(t *testing.T, storage ActivityPubStorage) {
 	{
 		toStore := 0.1111111
 		t.Run(fmt.Sprintf("store %T", toStore), func(t *testing.T) {
-			if err := mStorage.SaveMetadata(internal.RootID, toStore); err != nil {
+			if err := mStorage.SaveMetadata(gen.RootID, toStore); err != nil {
 				t.Errorf("unable to save Metadata %T: %s", toStore, err)
 			}
 
 			var loadInto float64
-			if err := mStorage.LoadMetadata(internal.RootID, &loadInto); err != nil {
-				t.Errorf("unable to load metadata %T for iri %s: %s", toStore, internal.RootID, err)
+			if err := mStorage.LoadMetadata(gen.RootID, &loadInto); err != nil {
+				t.Errorf("unable to load metadata %T for iri %s: %s", toStore, gen.RootID, err)
 			}
 			if !cmp.Equal(toStore, loadInto) {
 				t.Errorf("loaded metadata is not equal: %s", cmp.Diff(toStore, loadInto))
@@ -215,13 +215,13 @@ func RunMetadataTests(t *testing.T, storage ActivityPubStorage) {
 	{
 		toStore := []byte("Lorem ipsum dolor sic amet")
 		t.Run(fmt.Sprintf("store %T", toStore), func(t *testing.T) {
-			if err := mStorage.SaveMetadata(internal.RootID, toStore); err != nil {
+			if err := mStorage.SaveMetadata(gen.RootID, toStore); err != nil {
 				t.Errorf("unable to save Metadata %T: %s", toStore, err)
 			}
 
 			var loadInto []byte
-			if err := mStorage.LoadMetadata(internal.RootID, &loadInto); err != nil {
-				t.Errorf("unable to load metadata %T for iri %s: %s", toStore, internal.RootID, err)
+			if err := mStorage.LoadMetadata(gen.RootID, &loadInto); err != nil {
+				t.Errorf("unable to load metadata %T for iri %s: %s", toStore, gen.RootID, err)
 			}
 			if !cmp.Equal(toStore, loadInto) {
 				t.Errorf("loaded metadata is not equal: %s", cmp.Diff(toStore, loadInto))
@@ -231,13 +231,13 @@ func RunMetadataTests(t *testing.T, storage ActivityPubStorage) {
 	{
 		toStore := "Lorem ipsum dolor sic amet"
 		t.Run(fmt.Sprintf("store %T", toStore), func(t *testing.T) {
-			if err := mStorage.SaveMetadata(internal.RootID, toStore); err != nil {
+			if err := mStorage.SaveMetadata(gen.RootID, toStore); err != nil {
 				t.Errorf("unable to save Metadata %T: %s", toStore, err)
 			}
 
 			var loadInto string
-			if err := mStorage.LoadMetadata(internal.RootID, &loadInto); err != nil {
-				t.Errorf("unable to load metadata %T for iri %s: %s", toStore, internal.RootID, err)
+			if err := mStorage.LoadMetadata(gen.RootID, &loadInto); err != nil {
+				t.Errorf("unable to load metadata %T for iri %s: %s", toStore, gen.RootID, err)
 			}
 			if !cmp.Equal(toStore, loadInto) {
 				t.Errorf("loaded metadata is not equal: %s", cmp.Diff(toStore, loadInto))

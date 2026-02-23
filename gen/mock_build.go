@@ -1,4 +1,4 @@
-package internal
+package gen
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ import (
 	"time"
 
 	vocab "github.com/go-ap/activitypub"
-	"github.com/go-ap/storage-conformance-suite/internal/names"
+	"github.com/go-ap/storage-conformance-suite/gen/names"
 )
 
 var (
