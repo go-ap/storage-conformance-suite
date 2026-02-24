@@ -92,7 +92,7 @@ func typeAsString(typ vocab.Typer) string {
 	return "unknown"
 }
 
-var SetItemID = func(it vocab.Item) {
+func DefaultSetter(it vocab.Item) {
 	_ = vocab.OnObject(it, func(ob *vocab.Object) error {
 		isCollection := it.IsCollection()
 		pieces := make([]string, 0)
@@ -115,6 +115,8 @@ var SetItemID = func(it vocab.Item) {
 		return nil
 	})
 }
+
+var SetItemID = DefaultSetter
 
 func RandomCollection(attrTo vocab.Item) vocab.CollectionInterface {
 	col := new(vocab.OrderedCollection)
