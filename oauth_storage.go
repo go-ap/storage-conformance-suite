@@ -119,7 +119,10 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			}
 		})
 		t.Run("list clients", func(t *testing.T) {
-			loader := oStorage.(ClientLister)
+			loader, ok := oStorage.(ClientLister)
+			if !ok {
+				t.Skipf("storage %T is not compatible with Client Listing", oStorage)
+			}
 			clients, err := loader.ListClients()
 			if err != nil {
 				t.Errorf("unable to list clients: %s", err)
