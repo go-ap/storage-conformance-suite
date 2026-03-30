@@ -71,7 +71,7 @@ func getRandomContent() []byte {
 }
 
 func getRandomTime() time.Time {
-	year := int(1900 + rand.Int31n(199))
+	year := int(2000 + rand.Int31n(32))
 	month := time.Month(rand.Int31n(12) + 1)
 	day := int(rand.Int31n(30))
 	hour := int(rand.Int31n(24))
@@ -311,6 +311,7 @@ func RandomActivity(ob vocab.Item, attrTo vocab.Item) vocab.Item {
 	act.AttributedTo = attrTo.GetLink()
 	act.Actor = attrTo.GetLink()
 	act.To = vocab.ItemCollection{RootID, vocab.PublicNS}
+	act.Published = getRandomTime()
 
 	if typesNeedReasons.Match(act.Type) {
 		act.Content = vocab.DefaultNaturalLanguage(getRandomReason())
@@ -328,6 +329,7 @@ func RandomQuestion(attrTo vocab.Item) vocab.Item {
 	act.AttributedTo = attrTo.GetLink()
 	act.Actor = attrTo.GetLink()
 	act.To = vocab.ItemCollection{RootID, vocab.PublicNS}
+	act.Published = getRandomTime()
 
 	if typesNeedReasons.Match(act.Type) {
 		act.Content = vocab.DefaultNaturalLanguage(getRandomReason())
@@ -350,6 +352,7 @@ func RandomActor(attrTo vocab.Item) vocab.Item {
 	act.Type = getRandomActorType()
 	act.AttributedTo = attrTo.GetLink()
 	act.Icon = RandomImage("image/png", attrTo.GetLink())
+	act.Published = getRandomTime()
 	SetItemID(act)
 
 	act.Inbox = vocab.Inbox.IRI(act)
@@ -374,6 +377,7 @@ func RandomTag(parent vocab.Item) vocab.Item {
 	tag.AttributedTo = parent.GetLink()
 	tag.Name = vocab.DefaultNaturalLanguage("#test")
 	tag.ID = parent.GetLink().AddPath("tags").AddPath(url.PathEscape("#test"))
+	tag.Published = getRandomTime()
 	return tag
 }
 
@@ -382,6 +386,7 @@ func RandomImage(mime vocab.MimeType, parent vocab.Item) vocab.Item {
 	img.Type = vocab.ImageType
 	img.MediaType = mime
 	img.AttributedTo = parent.GetLink()
+	img.Published = getRandomTime()
 
 	data := getRandomContentByMimeType(mime)
 	buf := make([]byte, base64.RawStdEncoding.EncodedLen(len(data)))

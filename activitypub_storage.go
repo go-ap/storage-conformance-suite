@@ -288,7 +288,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 		})
 		queryFilters := append(withPagination, append(byTypeFilters, byActivityObjectTypeFilters...)...)
 		for _, fil := range queryFilters {
-			t.Run(fmt.Sprintf("query collection with filters %s", fil), func(t *testing.T) {
+			t.Run(fmt.Sprintf("query collection with filters %#v", fil), func(t *testing.T) {
 				loadIt, err := storage.Load(colIRI, fil...)
 				if err != nil {
 					t.Errorf("unable to load collection %s: %s", colIRI, err)
@@ -314,8 +314,8 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				if len(filteredItems) != len(foundItems) {
 					t.Fatalf("invalid collection item counts returned from loading %d, expected %d", len(foundItems), len(filteredItems))
 				}
-				if !cmp.Equal(foundItems, filteredItems) {
-					t.Errorf("invalid items returned from loading: %s", cmp.Diff(foundItems, filteredItems))
+				if !cmp.Equal(foundItems, filteredItems /*, cmp.Comparer(vocab.ItemCollection.Equal)*/) {
+					t.Errorf("invalid items returned from loading: %s", cmp.Diff(foundItems, filteredItems /*, cmp.Comparer(vocab.ItemCollection.Equal)*/))
 				}
 			})
 		}
@@ -324,7 +324,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 			checks := filters.Checks{filters.WithMaxCount(cnt)}
 			t.Run(fmt.Sprintf("traverse collection with pagination %d", cnt), func(t *testing.T) {
 				for range len(randomObjects) / cnt {
-					t.Run(fmt.Sprintf("query collection with filters %s", checks), func(t *testing.T) {
+					t.Run(fmt.Sprintf("query collection with filters %#v", checks), func(t *testing.T) {
 						loadIt, err := storage.Load(colIRI, checks...)
 						if err != nil {
 							t.Errorf("unable to load collection %s: %s", colIRI, err)
@@ -350,8 +350,8 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 						if len(filteredItems) != len(foundItems) {
 							t.Fatalf("invalid collection item counts returned from loading %d, expected %d", len(foundItems), len(filteredItems))
 						}
-						if !cmp.Equal(foundItems, filteredItems) {
-							t.Errorf("invalid items returned from loading: %s", cmp.Diff(foundItems, filteredItems))
+						if !cmp.Equal(foundItems, filteredItems, EquateItems) {
+							t.Errorf("invalid items returned from loading: %s", cmp.Diff(foundItems, filteredItems, EquateItems))
 						}
 						if len(filteredItems) != cnt {
 							t.Fatalf("invalid collection item counts returned from loading %d, expected %d", len(foundItems), cnt)
@@ -407,3 +407,23 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 		}
 	})
 }
+
+func areItems(a, b any) bool {
+	_, ok1 := a.(vocab.Item)
+	_, ok2 := b.(vocab.Item)
+	return ok1 && ok2
+}
+
+func compareItems(x, y interface{}) bool {
+	var i1 vocab.Item
+	var i2 vocab.Item
+	if ic1, ok := x.(vocab.Item); ok {
+		i1 = ic1
+	}
+	if ic2, ok := y.(vocab.Item); ok {
+		i2 = ic2
+	}
+	return vocab.ItemsEqual(i1, i2)
+}
+
+var EquateItems = cmp.FilterValues(areItems, cmp.Comparer(compareItems))

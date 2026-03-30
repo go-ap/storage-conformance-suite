@@ -1,15 +1,15 @@
 module github.com/go-ap/storage-conformance-suite
 
-go 1.25
+go 1.25.0
 
 require (
-	github.com/go-ap/activitypub v0.0.0-20260217161652-7bec47e1f870
+	github.com/go-ap/activitypub v0.0.0-20260330133938-2e4972ff690b
 	github.com/go-ap/errors v0.0.0-20260208110149-e1b309365966
-	github.com/go-ap/filters v0.0.0-20260222113425-997143e4aca0
+	github.com/go-ap/filters v0.0.0-20260330134234-a70aa1bf886d
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20210113124101-8612686d6dda
-	golang.org/x/crypto v0.43.0
-	golang.org/x/text v0.34.0
+	golang.org/x/crypto v0.49.0
+	golang.org/x/text v0.35.0
 )
 
 require (
@@ -20,14 +20,15 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gotesttools/gotestfmt/v2 v2.5.0 // indirect
 	github.com/jdkato/prose v1.2.1 // indirect
-	github.com/mariusor/qstring v0.0.0-20200204164351-5a99d46de39d // indirect
+	github.com/leporo/sqlf v1.4.0 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
+	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fastjson v1.6.10 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
-	quamina.net/go/quamina v1.5.2-0.20260219224429-4b74c3864009 // indirect
+	quamina.net/go/quamina/v2 v2.0.2 // indirect
 )
 
 tool github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt
