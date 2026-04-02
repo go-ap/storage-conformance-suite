@@ -69,6 +69,7 @@ type ActivityPubStorage interface {
 	Delete(it vocab.Item) error
 
 	// Create
+	// Deprecated
 	// NOTE(marius): should we remove this in favour of custom logic for Save()?
 	Create(col vocab.CollectionInterface) (vocab.CollectionInterface, error)
 
@@ -242,7 +243,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 	})
 	colIRI := col.GetLink()
 	t.Run("create collection", func(t *testing.T) {
-		savedIt, err := storage.Create(col)
+		savedIt, err := storage.Save(col)
 		if err != nil {
 			t.Errorf("unable to save collection: %s", err)
 		}
