@@ -71,7 +71,7 @@ type ActivityPubStorage interface {
 	// Create
 	// Deprecated
 	// NOTE(marius): should we remove this in favour of custom logic for Save()?
-	Create(col vocab.CollectionInterface) (vocab.CollectionInterface, error)
+	//Create(col vocab.CollectionInterface) (vocab.CollectionInterface, error)
 
 	// AddTo adds items to the collection.
 	// Similarly to Save(), this method needs to implement some hidden behaviour in order to conform to the expectations
