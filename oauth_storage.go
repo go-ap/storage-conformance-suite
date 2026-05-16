@@ -28,8 +28,7 @@ type OSINStorage interface {
 }
 
 type ClientSaver interface {
-	UpdateClient(c osin.Client) error
-	CreateClient(c osin.Client) error
+	SaveClient(c osin.Client) error
 	RemoveClient(id string) error
 }
 
@@ -104,9 +103,9 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			RedirectUri: "http://127.0.0.1",
 			UserData:    "https://example.com/~jdoe",
 		}
-		t.Run("create client", func(t *testing.T) {
-			if err := saver.CreateClient(&client); err != nil {
-				t.Errorf("unable to create client: %s", err)
+		t.Run("save client", func(t *testing.T) {
+			if err := saver.SaveClient(&client); err != nil {
+				t.Errorf("unable to save new client: %s", err)
 			}
 		})
 		t.Run("get client", func(t *testing.T) {
@@ -139,8 +138,8 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			toUpdate.RedirectUri = "https://127.0.0.1"
 			toUpdate.Secret = "dsa"
 			toUpdate.UserData = "lorem ipsum dolor sic amet"
-			if err := saver.UpdateClient(&toUpdate); err != nil {
-				t.Errorf("unable to update client: %s", err)
+			if err := saver.SaveClient(&toUpdate); err != nil {
+				t.Errorf("unable to save client: %s", err)
 			}
 			loaded, err := oStorage.GetClient(client.Id)
 			if err != nil {
@@ -171,7 +170,7 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			UserData:    "https://example.com/~jdoe",
 		}
 		if saver, ok := oStorage.(ClientSaver); ok {
-			_ = saver.CreateClient(&client)
+			_ = saver.SaveClient(&client)
 		}
 
 		auth := osin.AuthorizeData{
@@ -222,7 +221,7 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			UserData:    "https://example.com/~jdoe",
 		}
 		if saver, ok := oStorage.(ClientSaver); ok {
-			_ = saver.CreateClient(&client)
+			_ = saver.SaveClient(&client)
 		}
 
 		auth := osin.AuthorizeData{
@@ -298,7 +297,7 @@ func RunOAuthTests(t *testing.T, storage ActivityPubStorage) {
 			UserData:    "https://example.com/~jdoe",
 		}
 		if saver, ok := oStorage.(ClientSaver); ok {
-			_ = saver.CreateClient(&client)
+			_ = saver.SaveClient(&client)
 		}
 
 		auth := osin.AuthorizeData{

@@ -203,12 +203,7 @@ func clientPath(clientID string) string {
 	return filepath.Join("oauth", "clients", clientID)
 }
 
-func (ms *memStorage) CreateClient(c osin.Client) error {
-	ms.Map.Store(clientPath(c.GetId()), c)
-	return nil
-}
-
-func (ms *memStorage) UpdateClient(c osin.Client) error {
+func (ms *memStorage) SaveClient(c osin.Client) error {
 	ms.Map.Store(clientPath(c.GetId()), c)
 	return nil
 }
