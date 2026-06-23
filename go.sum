@@ -8,12 +8,12 @@ github.com/bits-and-blooms/bitset v1.24.5/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/go-ap/activitypub v0.0.0-20260607141243-4f8aa4005e65 h1:/dd2Jo3Wa6OzftQjXajLuFiiht1mySbIW/JGZxwhoBs=
-github.com/go-ap/activitypub v0.0.0-20260607141243-4f8aa4005e65/go.mod h1:5d40DZViZ77VvaN2t6k/YMHtiWuBsNvU+FD+cR23XG8=
+github.com/go-ap/activitypub v0.0.0-20260623165555-815f070c5691 h1:CYjpMrhrEd+nZjvca/Rx7FEENAyuChAHe1Qc6LZ71Bg=
+github.com/go-ap/activitypub v0.0.0-20260623165555-815f070c5691/go.mod h1:5d40DZViZ77VvaN2t6k/YMHtiWuBsNvU+FD+cR23XG8=
 github.com/go-ap/errors v0.0.0-20260607141156-afed270859b6 h1:EvyXld9WlDGrkRI8ViXpgx5UlUg6SkrHiqKPFOFJylo=
 github.com/go-ap/errors v0.0.0-20260607141156-afed270859b6/go.mod h1:TUFnJ4TvTjppw3sBZbePwN7pVlbFs+HaWxfRwXrW9mE=
-github.com/go-ap/filters v0.0.0-20260607141701-131281f883a2 h1:gFb73QtfFcKfUOUWNpmqy4zUK6Bd005uCzAncgfmhg4=
-github.com/go-ap/filters v0.0.0-20260607141701-131281f883a2/go.mod h1:ZoHAtk+QGqBv1dY5Zd711Go0Z/wCTVqTcJiyWTT0AWg=
+github.com/go-ap/filters v0.0.0-20260623165758-2d9724598dc0 h1:aRM9X8NjzPUgxKe7E6wzTaRo5dvb350RyM5+f+NXQ2U=
+github.com/go-ap/filters v0.0.0-20260623165758-2d9724598dc0/go.mod h1:i922VEnwnqkME9HiEBvsrQiAQBCuhrPlAYMsz5FcKpc=
 github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38 h1:YB/gyKeZxzCOo0G0xUWGchXRm3sy/52tQk9WBr/2nEA=
 github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38/go.mod h1:4h93IBxgfnE/DEleMLgJ/XCeu/RtQ+MUh3ucANseeXA=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
@@ -59,8 +59,8 @@ github.com/valyala/fastjson v1.6.10 h1:/yjJg8jaVQdYR3arGxPE2X5z89xrlhS0eGXdv+ADT
 github.com/valyala/fastjson v1.6.10/go.mod h1:e6FubmQouUNP73jtMLmcbxS6ydWIpOfhz34TSfO3JaE=
 golang.org/x/crypto v0.49.0 h1:+Ng2ULVvLHnJ/ZFEq4KdcDd/cfjrrjjNSXNzxg0Y4U4=
 golang.org/x/crypto v0.49.0/go.mod h1:ErX4dUh2UM+CFYiXZRTcMpEcN8b/1gxEuv3nODoYtCA=
-golang.org/x/text v0.37.0 h1:Cqjiwd9eSg8e0QAkyCaQTNHFIIzWtidPahFWR83rTrc=
-golang.org/x/text v0.37.0/go.mod h1:a5sjxXGs9hsn/AJVwuElvCAo9v8QYLzvavO5z2PiM38=
+golang.org/x/text v0.38.0 h1:sXmwo9DwP3OK9EZ7PqAdaooSGozfl/3a6/xJcbzPRhE=
+golang.org/x/text v0.38.0/go.mod h1:YXZt3QhHUKYT53r2lLKFIVi6Ao1jdzrTR/KQ09qyxF4=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/neurosnap/sentences.v1 v1.0.6/go.mod h1:YlK+SN+fLQZj+kY3r8DkGDhDr91+S3JmTb5LSxFRQo0=
 gopkg.in/neurosnap/sentences.v1 v1.0.7 h1:gpTUYnqthem4+o8kyTLiYIB05W+IvdQFYR29erfe8uU=
