@@ -15,7 +15,7 @@ tasks:
       ./storage-conformance-suite/tools/run-suite.sh https://github.com/go-ap/storage-badger
   - storage-sqlite: |
       ./storage-conformance-suite/tools/run-suite.sh https://github.com/go-ap/storage-sqlite
-  - storage-sqlite-v2: |
-      ./storage-conformance-suite/tools/run-suite.sh https://git.sr.ht/~mariusor/storage-sqlite storage-sqlite-v2
   - storage-pg: |
       ./storage-conformance-suite/tools/run-suite.sh https://github.com/go-ap/storage-pg
+  - storage-sqlite-v2: |
+      ./storage-conformance-suite/tools/run-suite.sh https://git.sr.ht/~mariusor/storage-sqlite storage-sqlite-v2
