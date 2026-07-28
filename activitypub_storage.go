@@ -161,7 +161,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 		}
 	})
 
-	randomObjects := gen.RandomItemCollection(48)
+	randomObjects := gen.RandomItemCollection(64)
 	t.Run(fmt.Sprintf("save %d random objects", len(randomObjects)), func(t *testing.T) {
 		for _, ob := range randomObjects {
 			savedIt, err := storage.Save(ob)
