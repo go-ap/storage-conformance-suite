@@ -3,9 +3,9 @@ module github.com/go-ap/storage-conformance-suite
 go 1.25.0
 
 require (
-	github.com/go-ap/activitypub v0.0.0-20260728095453-d05f256ecd66
+	github.com/go-ap/activitypub v0.0.0-20260728101245-29ad8d823d52
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
-	github.com/go-ap/filters v0.0.0-20260728095751-aac1bd81584b
+	github.com/go-ap/filters v0.0.0-20260728141602-d17cbb6bba25
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20210113124101-8612686d6dda
 	golang.org/x/crypto v0.49.0
