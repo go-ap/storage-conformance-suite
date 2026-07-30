@@ -415,7 +415,7 @@ func areItems(a, b any) bool {
 	return ok1 && ok2
 }
 
-func compareItems(x, y interface{}) bool {
+func compareItems(x, y any) bool {
 	var i1 vocab.Item
 	var i2 vocab.Item
 	if ic1, ok := x.(vocab.Item); ok {

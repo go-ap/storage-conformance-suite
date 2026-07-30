@@ -115,28 +115,48 @@ func typeAsString(typ vocab.Typer) string {
 	return "unknown"
 }
 
+func setObjectID(ob *vocab.Object) error {
+	isCollection := ob.IsCollection()
+	pieces := make([]string, 0)
+	base := DefaultHost
+	if !vocab.IsNil(ob.AttributedTo) {
+		base = ob.AttributedTo.GetLink()
+	}
+	pieces = append(pieces, "/")
+	if isCollection {
+		typ := strings.ToLower(typeAsString(ob.Type))
+		pieces = append(pieces, typ)
+	} else {
+		typ := strings.ToLower(typeAsString(ob.Type))
+		cnt, _ := typeCountMap[typ]
+		cnt++
+		typeCountMap[typ] = cnt
+		pieces = append(pieces, typ, strconv.Itoa(cnt))
+	}
+	ob.ID = base.AddPath(filepath.Join(pieces...))
+	return nil
+}
+
+func setLinkID(ob *vocab.Link) error {
+	pieces := make([]string, 0)
+	base := DefaultHost
+	pieces = append(pieces, "/")
+	typ := strings.ToLower(typeAsString(ob.Type))
+	cnt, _ := typeCountMap[typ]
+	cnt++
+	typeCountMap[typ] = cnt
+	pieces = append(pieces, typ, strconv.Itoa(cnt))
+	ob.ID = base.AddPath(filepath.Join(pieces...))
+	return nil
+}
+
 func DefaultSetter(it vocab.Item) {
-	_ = vocab.OnObject(it, func(ob *vocab.Object) error {
-		isCollection := it.IsCollection()
-		pieces := make([]string, 0)
-		base := DefaultHost
-		if !vocab.IsNil(ob.AttributedTo) {
-			base = ob.AttributedTo.GetLink()
-		}
-		pieces = append(pieces, "/")
-		if isCollection {
-			typ := strings.ToLower(typeAsString(ob.Type))
-			pieces = append(pieces, typ)
-		} else {
-			typ := strings.ToLower(typeAsString(ob.Type))
-			cnt, _ := typeCountMap[typ]
-			cnt++
-			typeCountMap[typ] = cnt
-			pieces = append(pieces, typ, strconv.Itoa(cnt))
-		}
-		ob.ID = base.AddPath(filepath.Join(pieces...))
-		return nil
-	})
+	if vocab.IsObject(it) {
+		_ = vocab.OnObject(it, setObjectID)
+	}
+	if vocab.IsLink(it) {
+		_ = vocab.OnLink(it, setLinkID)
+	}
 }
 
 var SetItemID = DefaultSetter
