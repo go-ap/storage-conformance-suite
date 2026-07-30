@@ -26,7 +26,7 @@ func RandomActor(parent vocab.Item) vocab.Item {
 }
 
 func RandomActivity(withObject, parent vocab.Item) vocab.Item {
-	return gen.RandomNonCreateActivity(withObject, parent)
+	return gen.RandomNonNonContentActivity(withObject, parent)
 }
 
 func RandomCollection(cnt int) vocab.ItemCollection {

@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"mime"
 	"net/http"
-	"net/url"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	defaultTime = time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC)
+	BaseTime = time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC)
 
 	DefaultHost vocab.IRI = "https://example.com"
 	RootID                = DefaultHost.AddPath("~root")
@@ -29,7 +29,7 @@ var (
 	Root = &vocab.Actor{
 		ID:                RootID,
 		Type:              vocab.PersonType,
-		Published:         defaultTime,
+		Published:         BaseTime,
 		Name:              vocab.DefaultNaturalLanguage("Rooty McRootface"),
 		Summary:           vocab.DefaultNaturalLanguage("The base actor for the conformance test suite"),
 		Content:           vocab.DefaultNaturalLanguage("<p>The base actor for the conformance test suite</p>"),
@@ -47,9 +47,29 @@ var (
 	}
 )
 
+func typeMatchMimeType(typ vocab.ActivityVocabularyType, mt string) bool {
+	switch mt {
+	case "image/svg+xml":
+		return vocab.DocumentType.Match(typ)
+	case "text/html", "text/markdown", "text/plain":
+		return vocab.ActivityVocabularyTypes{vocab.NoteType, vocab.ArticleType}.Match(typ)
+	case "video/webm", "video/mp4", "video/mpeg":
+		return vocab.VideoType.Match(typ)
+	case "image/png", "image/jpeg", "image/gif":
+		return vocab.ImageType.Match(typ)
+	case "audio/mp3", "audio/mpeg", "audio/mpeg3", "application/octet-stream":
+		return vocab.AudioType.Match(typ)
+	default:
+		return false
+	}
+}
+
 func getContentByType(typ vocab.ActivityVocabularyType) []byte {
 	validArray := make([][]byte, 0)
-	for _, files := range ContentMap {
+	for mimeType, files := range ContentMap {
+		if !typeMatchMimeType(typ, mimeType) {
+			continue
+		}
 		for _, file := range files {
 			validArray = append(validArray, file)
 		}
@@ -73,12 +93,14 @@ func getRandomContent() []byte {
 	return validArray[rand.Int()%len(validArray)]
 }
 
+// getRandomTime we use a random time,
+// because time.Now() contains monotonic information which we don't care about
 func getRandomTime() time.Time {
 	hour := time.Duration(rand.Int31n(24)) * time.Hour
 	minute := time.Duration(rand.Int31n(59)) * time.Minute
 	second := time.Duration(rand.Int31n(59)) * time.Second
-	defaultTime = defaultTime.Add(hour + minute + second)
-	return defaultTime
+	BaseTime = BaseTime.Add(hour + minute + second)
+	return BaseTime
 }
 
 var typeCountMap = make(map[string]int)
@@ -131,20 +153,17 @@ func RandomCollection(attrTo vocab.LinkOrIRI) vocab.CollectionInterface {
 
 type generatorFn func(iri vocab.LinkOrIRI) vocab.Item
 
+var itemGenFns = append(nonActivityGenFns, RandomQuestion)
+
 func RandomItem(attrTo vocab.Item) vocab.Item {
-	genFns := []generatorFn{
-		RandomObject,
-		RandomActor,
+	genFns := append(itemGenFns,
 		func(attrTo vocab.LinkOrIRI) vocab.Item {
 			return CreateActivity(RandomObject(attrTo), attrTo)
 		},
 		func(attrTo vocab.LinkOrIRI) vocab.Item {
-			return RandomNonCreateActivity(RandomObject(attrTo), attrTo)
+			return RandomNonNonContentActivity(RandomObject(attrTo), attrTo)
 		},
-		RandomLink,
-		RandomQuestion,
-	}
-
+	)
 	fn := genFns[rand.Intn(len(genFns))]
 	return fn(attrTo)
 }
@@ -157,21 +176,7 @@ func RandomObjectByType(attrTo vocab.Item, typ vocab.ActivityVocabularyType) voc
 	// because the latter contains monotonic information which gets lost at loading form the mock storage we're using
 	ob.Published = getRandomTime()
 
-	ob.Content = vocab.DefaultNaturalLanguage("no data")
-	if data := getContentByType(typ); len(data) > 0 {
-		typ, mt := getObjectTypes(data)
-		ob.Type = typ
-		ob.MediaType = mt
-
-		if !strings.Contains(string(mt), "text") {
-			buf := make([]byte, base64.RawStdEncoding.EncodedLen(len(data)))
-			base64.RawStdEncoding.Encode(buf, data)
-			data = buf
-		} else {
-			ob.Summary = vocab.DefaultNaturalLanguage(string(data[:bytes.Index(data, []byte{'.'})]))
-		}
-		ob.Content = vocab.DefaultNaturalLanguage(string(data))
-	}
+	vocab.OnObject(ob, setContentByType(typ))
 	SetItemID(ob)
 
 	ob.Replies = vocab.Replies.IRI(ob)
@@ -181,29 +186,60 @@ func RandomObjectByType(attrTo vocab.Item, typ vocab.ActivityVocabularyType) voc
 	return ob
 }
 
-func RandomObject(attrTo vocab.LinkOrIRI) vocab.Item {
-	ob := new(vocab.Object)
-	ob.Type = vocab.NoteType
-	ob.AttributedTo = attrTo.GetLink()
-	// NOTE(marius): we use random time, instead of something like time.Now()
-	// because the latter contains monotonic information which gets lost at loading form the mock storage we're using
-	ob.Published = getRandomTime()
+func RandomProfile(attrTo vocab.LinkOrIRI) vocab.Item {
+	p := new(vocab.Profile)
+	p.AttributedTo = attrTo.GetLink()
+	p.Published = getRandomTime()
+	p.Type = vocab.ProfileType
+	SetItemID(p)
+	return p
+}
 
-	ob.Content = vocab.DefaultNaturalLanguage("no data")
-	if data := getRandomContent(); len(data) > 0 {
-		typ, mt := getObjectTypes(data)
+func RandomPlace(attrTo vocab.LinkOrIRI) vocab.Item {
+	p := new(vocab.Place)
+	p.AttributedTo = attrTo.GetLink()
+	p.Published = getRandomTime()
+	p.Type = vocab.PlaceType
+	SetItemID(p)
+	return p
+}
+
+func setContentByType(typ vocab.ActivityVocabularyType) func(ob *vocab.Object) error {
+	var mt vocab.MimeType
+	var data []byte
+	if typ == "-" {
+		data = getRandomContent()
+	} else {
+		data = getContentByType(typ)
+	}
+	return func(ob *vocab.Object) error {
+		typ, mt = getObjectTypes(data)
+
 		ob.Type = typ
 		ob.MediaType = mt
 
-		if !strings.Contains(string(mt), "text") {
-			buf := make([]byte, base64.RawStdEncoding.EncodedLen(len(data)))
-			base64.RawStdEncoding.Encode(buf, data)
-			data = buf
+		if len(data) == 0 {
+			ob.Content = vocab.DefaultNaturalLanguage("no data")
 		} else {
-			ob.Summary = vocab.DefaultNaturalLanguage(string(data[:bytes.Index(data, []byte{'.'})]))
+			if !strings.Contains(string(mt), "text") {
+				buf := make([]byte, base64.RawStdEncoding.EncodedLen(len(data)))
+				base64.RawStdEncoding.Encode(buf, data)
+				data = buf
+			} else {
+				ob.Summary = vocab.DefaultNaturalLanguage(string(data[:bytes.Index(data, []byte{'.'})]))
+			}
+			ob.Content = vocab.DefaultNaturalLanguage(string(data))
 		}
-		ob.Content = vocab.DefaultNaturalLanguage(string(data))
+		return nil
 	}
+}
+
+func RandomObject(attrTo vocab.LinkOrIRI) vocab.Item {
+	ob := new(vocab.Object)
+	ob.AttributedTo = attrTo.GetLink()
+	ob.Published = getRandomTime()
+
+	_ = vocab.OnObject(ob, setContentByType("-"))
 	SetItemID(ob)
 
 	ob.Replies = vocab.Replies.IRI(ob)
@@ -268,55 +304,66 @@ func getRandomReason() string {
 	return reasons[rand.Intn(len(reasons))]
 }
 
-var typesNeedReasons = vocab.ActivityVocabularyTypes{vocab.BlockType, vocab.FlagType, vocab.IgnoreType}
+var (
+	typesNeedReasons = vocab.ActivityVocabularyTypes{
+		vocab.BlockType,
+		vocab.FlagType,
+		vocab.IgnoreType,
+	}
 
-var validForActorActivityTypes = vocab.ActivityVocabularyTypes{
-	vocab.UpdateType,
-	vocab.LikeType,
-	vocab.DislikeType,
-	vocab.FlagType,
-	vocab.BlockType,
-	vocab.FollowType,
-	vocab.IgnoreType,
-}
+	typesNeedFullObject = vocab.ActivityVocabularyTypes{
+		vocab.CreateType,
+		vocab.UpdateType,
+	}
 
-var validForObjectActivityTypes = vocab.ActivityVocabularyTypes{
-	vocab.UpdateType,
-	vocab.LikeType,
-	vocab.DislikeType,
-	vocab.DeleteType,
-	vocab.FlagType,
-	vocab.BlockType,
-	vocab.FollowType,
-	vocab.IgnoreType,
-}
+	validNonDestructiveForObjectActivityTypes = vocab.ActivityVocabularyTypes{
+		vocab.LikeType,
+		vocab.DislikeType,
+		vocab.FlagType,
+		vocab.BlockType,
+		vocab.FollowType,
+		vocab.IgnoreType,
+	}
 
-var validForActivityActivityTypes = vocab.ActivityVocabularyTypes{
-	vocab.UndoType,
-}
+	validForObjectActivityTypes = append(validNonDestructiveForObjectActivityTypes, vocab.DeleteType)
 
-var validActivityTypes = append(validForObjectActivityTypes[:], validForActivityActivityTypes[:]...)
+	validNonDestructiveForActorActivityTypes = validNonDestructiveForObjectActivityTypes
+	validForActorActivityTypes               = validForObjectActivityTypes
+
+	validForActivityActivityTypes = vocab.ActivityVocabularyTypes{
+		vocab.UndoType,
+	}
+
+	validActivityTypes = append(validForObjectActivityTypes[:], validForActivityActivityTypes[:]...)
+)
 
 func getActivityTypeByObject(ob vocab.Item) vocab.ActivityVocabularyType {
 	if vocab.IsNil(ob) {
 		return validForObjectActivityTypes[rand.Int()%len(validForObjectActivityTypes)]
 	}
+
 	typ := ob.GetType()
-	if vocab.ActivityTypes.Match(typ) {
-		return validForActivityActivityTypes[rand.Int()%len(validForActivityActivityTypes)]
+	switch {
+	case vocab.ActivityTypes.Match(typ):
+		return validActivityTypes[rand.Intn(len(validActivityTypes))]
+	case vocab.ActorTypes.Match(typ):
+		return validNonDestructiveForActorActivityTypes[rand.Intn(len(validNonDestructiveForActorActivityTypes))]
 	}
-	if vocab.ActorTypes.Match(typ) {
-		return validForActorActivityTypes[rand.Int()%len(validForActorActivityTypes)]
-	}
-	return validForObjectActivityTypes[rand.Int()%len(validForObjectActivityTypes)]
+
+	return validNonDestructiveForActorActivityTypes[rand.Intn(len(validNonDestructiveForObjectActivityTypes))]
 }
 
-func RandomNonCreateActivity(ob vocab.Item, attrTo vocab.LinkOrIRI) vocab.Item {
+func RandomNonNonContentActivity(ob vocab.LinkOrIRI, attrTo vocab.LinkOrIRI) vocab.Item {
 	act := new(vocab.Activity)
-	act.Type = getActivityTypeByObject(ob)
-	if ob != nil {
-		act.Object = ob
+	if oob, ok := ob.(vocab.Item); ok {
+		act.Type = getActivityTypeByObject(oob)
+		if ob != nil {
+			act.Object = oob
+		}
+	} else {
+		act.Object = ob.GetLink()
 	}
+
 	act.AttributedTo = attrTo.GetLink()
 	act.Actor = attrTo.GetLink()
 	act.To = vocab.ItemCollection{RootID, vocab.PublicNS}
@@ -368,8 +415,11 @@ func RandomActor(attrTo vocab.LinkOrIRI) vocab.Item {
 	act.Outbox = vocab.Outbox.IRI(act)
 	act.Following = vocab.Following.IRI(act)
 	act.Followers = vocab.Followers.IRI(act)
+	act.Liked = vocab.Liked.IRI(act)
 
+	act.Shares = vocab.Shares.IRI(act)
 	act.Replies = vocab.Replies.IRI(act)
+	act.Likes = vocab.Likes.IRI(act)
 
 	return act
 }
@@ -381,12 +431,37 @@ func getRandomContentByMimeType(mimeType vocab.MimeType) []byte {
 	return nil
 }
 
-func RandomTag(parent vocab.Item) vocab.Item {
+var (
+	text = bytes.Join(
+		[][]byte{
+			getRandomContentByMimeType("text/plain"),
+			getRandomContentByMimeType("text/markdown"),
+		},
+		[]byte{'\n'},
+	)
+
+	words = func() []string {
+		words := make([]string, 0, 400)
+		for _, w := range regexp.MustCompile(`\s+|\p{P}+`).Split(string(text), -1) {
+			if len(w) == 0 {
+				continue
+			}
+			words = append(words, w)
+		}
+		return words
+	}()
+)
+
+func getRandomWord() string {
+	return words[rand.Intn(len(words))]
+}
+
+func RandomTag(attrTo vocab.LinkOrIRI) vocab.Item {
 	tag := new(vocab.Object)
-	tag.AttributedTo = parent.GetLink()
-	tag.Name = vocab.DefaultNaturalLanguage("#test")
-	tag.ID = parent.GetLink().AddPath("tags").AddPath(url.PathEscape("#test"))
+	tag.AttributedTo = attrTo.GetLink()
+	tag.Name = vocab.DefaultNaturalLanguage("#" + getRandomWord())
 	tag.Published = getRandomTime()
+	SetItemID(tag)
 	return tag
 }
 
@@ -417,15 +492,15 @@ func getRandomHref() vocab.IRI {
 	return DefaultHost.AddPath(filepath.Join(strings.Split(names.GetRandom(), "_")...))
 }
 
-func RandomLink(attrTo vocab.LinkOrIRI) vocab.Item {
-	ob := new(vocab.Link)
-	ob.Type = getRandomLinkType()
-	ob.Name = getRandomName()
-	ob.Href = getRandomHref()
-	ob.HrefLang = vocab.DefaultLang
-	ob.ID = ob.Href
+func RandomLink(_ vocab.LinkOrIRI) vocab.Item {
+	l := new(vocab.Link)
+	l.Type = getRandomLinkType()
+	l.Name = getRandomName()
+	l.Href = getRandomHref()
+	l.HrefLang = vocab.DefaultLang
 
-	return ob
+	SetItemID(l)
+	return l
 }
 
 func CreateActivity(ob vocab.Item, attrTo vocab.LinkOrIRI) vocab.Item {
@@ -444,14 +519,17 @@ func CreateActivity(ob vocab.Item, attrTo vocab.LinkOrIRI) vocab.Item {
 	return act
 }
 
-func RandomNonActivity(attrTo vocab.LinkOrIRI) vocab.Item {
-	genFns := []generatorFn{
-		RandomObject,
-		RandomActor,
-		RandomLink,
-	}
+var nonActivityGenFns = []generatorFn{
+	RandomObject,
+	RandomPlace,
+	RandomProfile,
+	RandomActor,
+	RandomLink,
+	RandomTag,
+}
 
-	fn := genFns[rand.Intn(len(genFns))]
+func RandomNonActivity(attrTo vocab.LinkOrIRI) vocab.Item {
+	fn := nonActivityGenFns[rand.Intn(len(nonActivityGenFns))]
 	return fn(attrTo)
 }
 
@@ -490,7 +568,7 @@ func PlausibleStorage(attrTo vocab.Item, cnt int) []vocab.LinkOrIRI {
 	for range remActCnt {
 		act := actors[rand.Intn(len(actors))]
 		ob := objects[rand.Intn(len(objects))]
-		activities = append(activities, RandomNonCreateActivity(ob.GetLink(), act))
+		activities = append(activities, RandomNonNonContentActivity(ob, act))
 	}
 
 	slices.SortStableFunc(activities, ItemCollectionByTimestamp)
