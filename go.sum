@@ -12,8 +12,8 @@ github.com/go-ap/activitypub v0.0.0-20260730100035-a64b9d392262 h1:c3oSUR6yhEiy8
 github.com/go-ap/activitypub v0.0.0-20260730100035-a64b9d392262/go.mod h1:8bv1TUPpVP8p1ED/5I3rBGc6LeDWWxd/GvZ7xTvnQV8=
 github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394 h1:PK7N5OJVsotfSuzc3/s0CGqLN8tYFAixg36C6SpOB9Q=
 github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394/go.mod h1:dqDuYtQWH2GLodzfE+wKsEXEkWSHoGW43JZwGJapgX4=
-github.com/go-ap/filters v0.0.0-20260730164443-1e2ebeb8cf42 h1:gz48MT2vUjREbJ/5Sq/gmjhbFALUoj+YvJbmO7LUcQo=
-github.com/go-ap/filters v0.0.0-20260730164443-1e2ebeb8cf42/go.mod h1:Euf6EESMsthUoZ76ZJTCIGQYfkzRVPMKJiaTftl3wLA=
+github.com/go-ap/filters v0.0.0-20260802100929-58943c65046d h1:kHBrD3oxLVOGlEemDVzn5tih/W+Hf4OUvuSnp53O7jA=
+github.com/go-ap/filters v0.0.0-20260802100929-58943c65046d/go.mod h1:Euf6EESMsthUoZ76ZJTCIGQYfkzRVPMKJiaTftl3wLA=
 github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38 h1:YB/gyKeZxzCOo0G0xUWGchXRm3sy/52tQk9WBr/2nEA=
 github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38/go.mod h1:4h93IBxgfnE/DEleMLgJ/XCeu/RtQ+MUh3ucANseeXA=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=

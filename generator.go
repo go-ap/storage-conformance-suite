@@ -30,5 +30,5 @@ func RandomActivity(withObject, parent vocab.Item) vocab.Item {
 }
 
 func RandomCollection(cnt int) vocab.ItemCollection {
-	return gen.RandomItemCollection(cnt)
+	return gen.RandomItemCollection(cnt, gen.Root)
 }

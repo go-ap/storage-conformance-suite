@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/go-ap/activitypub v0.0.0-20260730100035-a64b9d392262
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
-	github.com/go-ap/filters v0.0.0-20260730164443-1e2ebeb8cf42
+	github.com/go-ap/filters v0.0.0-20260802100929-58943c65046d
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20210113124101-8612686d6dda
 	golang.org/x/crypto v0.49.0
