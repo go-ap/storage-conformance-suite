@@ -164,7 +164,7 @@ func typeAsString(typ vocab.Typer) string {
 }
 
 func setObjectID(ob *vocab.Object) error {
-	isCollection := ob.IsCollection()
+	isCollection := vocab.IsCollection(ob)
 	pieces := make([]string, 0)
 	base := DefaultHost
 	if !vocab.IsNil(ob.AttributedTo) {
