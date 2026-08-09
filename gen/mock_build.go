@@ -267,6 +267,7 @@ func RandomProfile(attrTo vocab.LinkOrIRI) vocab.Item {
 	p.AttributedTo = attrTo.GetLink()
 	p.Published = getRandomTime()
 	p.Type = vocab.ProfileType
+	p.Audience = publicAudience
 	SetItemID(p)
 	return p
 }
@@ -276,6 +277,7 @@ func RandomPlace(attrTo vocab.LinkOrIRI) vocab.Item {
 	p.AttributedTo = attrTo.GetLink()
 	p.Published = getRandomTime()
 	p.Type = vocab.PlaceType
+	p.Audience = publicAudience
 	SetItemID(p)
 	return p
 }
@@ -317,6 +319,7 @@ func RandomObject(attrTo vocab.LinkOrIRI) vocab.Item {
 
 	_ = vocab.OnObject(ob, setContentByType("-"))
 	SetItemID(ob)
+	ob.Audience = publicAudience
 
 	ob.Replies = vocab.Replies.IRI(ob)
 	ob.Likes = vocab.Likes.IRI(ob)
@@ -472,6 +475,7 @@ func RandomActor(attrTo vocab.LinkOrIRI) vocab.Item {
 	act.Icon = RandomImage("image/png", attrTo.GetLink())
 	act.Published = getRandomTime()
 	SetItemID(act)
+	act.Audience = publicAudience
 
 	act.Inbox = vocab.Inbox.IRI(act)
 	act.Outbox = vocab.Outbox.IRI(act)
@@ -523,6 +527,7 @@ func RandomTag(attrTo vocab.LinkOrIRI) vocab.Item {
 	tag.AttributedTo = attrTo.GetLink()
 	tag.Name = vocab.DefaultNaturalLanguage("#" + getRandomWord())
 	tag.Published = getRandomTime()
+	tag.Audience = publicAudience
 	SetItemID(tag)
 	return tag
 }
