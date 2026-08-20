@@ -8,7 +8,7 @@ require (
 	github.com/go-ap/filters v0.0.0-20260819154911-65176da3bd4a
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20210113124101-8612686d6dda
-	golang.org/x/crypto v0.49.0
+	golang.org/x/crypto v0.55.0
 	golang.org/x/text v0.41.0
 )
 
