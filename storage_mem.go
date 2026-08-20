@@ -164,7 +164,7 @@ func (ms *memStorage) Create(col vocab.CollectionInterface) (vocab.CollectionInt
 func (ms *memStorage) loadCol(colIRI vocab.IRI) (vocab.CollectionInterface, error) {
 	it, ok := ms.Map.Load(colIRI)
 	if !ok {
-		return nil, errors.Newf("unable to load collection %s", colIRI)
+		return nil, errors.NotFoundf("unable to load collection %s", colIRI)
 	}
 	col, ok := it.(vocab.CollectionInterface)
 	if !ok {

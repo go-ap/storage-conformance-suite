@@ -233,6 +233,28 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 		}
 	})
 
+	nonExistentCollection := vocab.CollectionPath("non-existent").IRI(randomObjects.First())
+	t.Run(fmt.Sprintf("operate on non-existent collection: %s", nonExistentCollection), func(t *testing.T) {
+		t.Run("RemoveFrom", func(t *testing.T) {
+			err := storage.RemoveFrom(nonExistentCollection, randomObjects...)
+			if err == nil {
+				t.Errorf("expected error on invalid collection removal")
+			}
+			if !errors.IsNotFound(err) {
+				t.Errorf("error received is not a not-found error: %s", err)
+			}
+		})
+		t.Run("AddTo", func(t *testing.T) {
+			err := storage.AddTo(nonExistentCollection, randomObjects...)
+			if err == nil {
+				t.Errorf("expected error on invalid collection removal")
+			}
+			if !errors.IsNotFound(err) {
+				t.Errorf("error received is not a not-found error: %s", err)
+			}
+		})
+	})
+
 	col := gen.RandomCollection(gen.Root)
 	_ = vocab.OnObject(col, func(ob *vocab.Object) error {
 		// NOTE(marius): this is a corner case for the storage-fs backend which doesn't work well with collections
