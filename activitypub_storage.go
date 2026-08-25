@@ -56,7 +56,7 @@ type ActivityPubStorage interface {
 	//	vocab.Activity{
 	//		Actor: vocab.Actor{
 	//			ID: "https://example.com/~jdoe",
-	//			preferredUsername: "janeDoe" ...
+	//			preferredUsername: "janeDoe", // ...
 	//		}
 	//	}
 	//
@@ -312,7 +312,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 		queryFilters := append(withPagination, append(byTypeFilters, byActivityObjectTypeFilters...)...)
 		for _, fil := range queryFilters {
 			t.Run(fmt.Sprintf("query collection with filters %#v", fil), func(t *testing.T) {
-				loadIt, err := storage.Load(colIRI, fil...)
+				loadIt, err = storage.Load(colIRI, fil...)
 				if err != nil {
 					t.Errorf("unable to load collection %s: %s", colIRI, err)
 				}
