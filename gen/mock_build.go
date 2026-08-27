@@ -215,8 +215,8 @@ var CollectionTypes = vocab.ActivityVocabularyTypes{vocab.OrderedCollectionType,
 func RandomCollection(attrTo vocab.LinkOrIRI) vocab.Item {
 	// NOTE(marius): skip creating unordered collections as we don't have a consistent storage for the items
 	//  See: https://todo.sr.ht/~mariusor/go-activitypub/508
-	//typ := vocab.OrderedCollectionType
-	typ := CollectionTypes[rand.Intn(len(CollectionTypes))]
+	typ := vocab.OrderedCollectionType
+	//typ := CollectionTypes[rand.Intn(len(CollectionTypes))]
 
 	var col vocab.Item
 	switch {
