@@ -2,6 +2,7 @@ package conformance
 
 import (
 	"fmt"
+	"sort"
 	"testing"
 
 	vocab "github.com/go-ap/activitypub"
@@ -161,7 +162,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 		}
 	})
 
-	randomObjects := gen.RandomItemCollection(64, gen.Root)
+	randomObjects := gen.RandomObjects(64, gen.Root)
 	t.Run(fmt.Sprintf("save %d random objects", len(randomObjects)), func(t *testing.T) {
 		for _, ob := range randomObjects {
 			savedIt, err := storage.Save(ob)
@@ -256,48 +257,44 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 	})
 
 	col := gen.RandomCollection(gen.Root)
-	_ = vocab.OnObject(col, func(ob *vocab.Object) error {
-		// NOTE(marius): this is a corner case for the storage-fs backend which doesn't work well with collections
-		// that don't have IRIs ending in the traditional collection names (inbox, outbox, followers, etc)
-		ob.ID = vocab.Inbox.IRI(ob.AttributedTo.GetLink())
-		ob.AttributedTo = ob.AttributedTo.GetLink()
-		return nil
-	})
 	colIRI := col.GetLink()
-	t.Run("create collection", func(t *testing.T) {
+	colType := colLabel(col.GetType())
+	t.Run(fmt.Sprintf("create %s", colType), func(t *testing.T) {
 		savedIt, err := storage.Save(col)
 		if err != nil {
-			t.Errorf("unable to save collection: %s", err)
+			t.Errorf("unable to save %s: %v", colType, err)
 		}
 		if !cmp.Equal(col, savedIt) {
-			t.Errorf("invalid collection returned from saving %s", cmp.Diff(col, savedIt))
+			t.Errorf("invalid %s returned from saving %s", colType, cmp.Diff(col, savedIt))
 		}
 		loadIt, err := storage.Load(colIRI)
 		if err != nil {
-			t.Errorf("unable to load collection %s: %s", colIRI, err)
+			t.Errorf("unable to load %s %s: %v", colType, colIRI, err)
 		}
-		if !cmp.Equal(col, loadIt) {
-			t.Errorf("invalid collection returned from loading %s: %s", colIRI, cmp.Diff(col, loadIt))
+		if !cmp.Equal(col, loadIt, EquateItems) {
+			t.Errorf("invalid %s returned from loading %s: %s", colType, colIRI, cmp.Diff(col, loadIt, EquateItems))
 		}
 
-		t.Run(fmt.Sprintf("add %d items to collection", randomObjects.Count()), func(t *testing.T) {
+		t.Run(fmt.Sprintf("add %d items to %s", randomObjects.Count(), colType), func(t *testing.T) {
 			if err = storage.AddTo(colIRI, randomObjects...); err != nil {
-				t.Errorf("unable to add objects to collection: %s", err)
+				t.Errorf("unable to add objects to %s: %v", err, colType)
 			}
 			loadedIt, err := storage.Load(colIRI)
 			if err != nil {
-				t.Errorf("unable to load collection %s: %s", colIRI, err)
+				t.Errorf("unable to load %s %s: %v", colType, colIRI, err)
 			}
 			err = vocab.OnCollectionIntf(loadedIt, func(col vocab.CollectionInterface) error {
 				if col.Count() != uint(len(randomObjects)) {
-					t.Fatalf("invalid collection item counts returned from loading %d, expected %d", col.Count(), len(randomObjects))
+					t.Fatalf("invalid %s item counts returned from loading %d, expected %d", colType, col.Count(), len(randomObjects))
 				}
 				savedItems := col.Collection()
 				if len(savedItems) != len(randomObjects) {
-					t.Fatalf("invalid collection item counts returned from loading %d, expected %d", len(savedItems), len(randomObjects))
+					t.Fatalf("invalid %s item counts returned from loading %d, expected %d", colType, len(savedItems), len(randomObjects))
 				}
-				gen.SortItemCollectionByID(randomObjects)
-				gen.SortItemCollectionByID(savedItems)
+				if vocab.CollectionType.Match(col.GetType()) {
+					gen.SortItemCollectionByID(randomObjects)
+					gen.SortItemCollectionByID(savedItems)
+				}
 				for i, it := range randomObjects {
 					if !cmp.Equal(it, savedItems[i]) {
 						t.Errorf("invalid item at pos %d, unable: %s", i, cmp.Diff(it, savedItems[i]))
@@ -306,15 +303,15 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				return nil
 			})
 			if err != nil {
-				t.Errorf("loaded object wasn't a collection %s: %s", colIRI, err)
+				t.Errorf("loaded object wasn't a(n) %s %s: %v", colType, colIRI, err)
 			}
 		})
 		queryFilters := append(withPagination, append(byTypeFilters, byActivityObjectTypeFilters...)...)
 		for _, fil := range queryFilters {
-			t.Run(fmt.Sprintf("query collection with filters %#v", fil), func(t *testing.T) {
+			t.Run(fmt.Sprintf("query %s with filters %#v", colType, fil), func(t *testing.T) {
 				loadIt, err = storage.Load(colIRI, fil...)
 				if err != nil {
-					t.Errorf("unable to load collection %s: %s", colIRI, err)
+					t.Errorf("unable to load %s %s: %v", colType, colIRI, err)
 				}
 				var foundItems vocab.ItemCollection
 				var totalItems uint
@@ -324,26 +321,28 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 					return nil
 				})
 				if err != nil {
-					t.Errorf("loaded object wasn't a collection %s: %s", colIRI, err)
+					t.Errorf("loaded object wasn't a(n) %s %s: %v", colType, colIRI, err)
 				}
+				filters.ResetPagination(fil...)
 				filteredRandomObjects := fil.Run(randomObjects)
 				filteredItems, ok := filteredRandomObjects.(vocab.ItemCollection)
 				if !ok {
 					t.Fatalf("filtered items are not compatible with an Item Collection %T", filteredRandomObjects)
 				}
 				if totalItems != uint(len(randomObjects)) {
-					t.Fatalf("invalid collection total items count returned from loading %d, expected %d", totalItems, len(randomObjects))
+					t.Fatalf("invalid %s total items count returned from loading %d, expected %d", colType, totalItems, len(randomObjects))
 				}
 				if len(filteredItems) != len(foundItems) {
-					t.Fatalf("invalid collection item counts returned from loading %d, expected %d", len(foundItems), len(filteredItems))
+					t.Fatalf("invalid %s item counts returned from loading %d, expected %d", colType, len(foundItems), len(filteredItems))
 				}
-				if !cmp.Equal(foundItems, filteredItems /*, cmp.Comparer(vocab.ItemCollection.Equal)*/) {
-					t.Errorf("invalid items returned from loading: %s", cmp.Diff(foundItems, filteredItems /*, cmp.Comparer(vocab.ItemCollection.Equal)*/))
+				if len(filteredItems) > 0 {
+					if !cmp.Equal(foundItems, filteredItems, EquateItemCollections) {
+						t.Errorf("invalid items returned from loading: %s", cmp.Diff(foundItems, filteredItems, EquateItemCollections))
+					}
 				}
 			})
 		}
-		for idx := range len(randomObjects) + 1 {
-			cnt := idx + 1
+		for _, cnt := range genCountsFor(len(randomObjects)) {
 			checks := filters.Checks{filters.WithMaxCount(cnt)}
 			t.Run(fmt.Sprintf("traverse collection with pagination %d", cnt), func(t *testing.T) {
 				for range len(randomObjects) / cnt {
@@ -362,6 +361,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 						if err != nil {
 							t.Errorf("loaded object wasn't a collection %s: %s", colIRI, err)
 						}
+						filters.ResetPagination(checks...)
 						filteredRandomObjects := checks.Run(randomObjects)
 						filteredItems, ok := filteredRandomObjects.(vocab.ItemCollection)
 						if !ok {
@@ -391,26 +391,26 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 			})
 		}
 
-		t.Run(fmt.Sprintf("remove %d items from collection", randomObjects.Count()), func(t *testing.T) {
+		t.Run(fmt.Sprintf("remove %d items from %s", randomObjects.Count(), colType), func(t *testing.T) {
 			if err = storage.RemoveFrom(colIRI, randomObjects...); err != nil {
-				t.Errorf("unable to remove objects from collection: %s", err)
+				t.Errorf("unable to remove objects from %s: %v", colType, err)
 			}
 			loadedIt, err := storage.Load(colIRI)
 			if err != nil {
-				t.Errorf("unable to load collection %s: %s", colIRI, err)
+				t.Errorf("unable to load %s %s: %v", colType, colIRI, err)
 			}
 			err = vocab.OnCollectionIntf(loadedIt, func(col vocab.CollectionInterface) error {
 				if col.Count() != 0 {
-					t.Fatalf("invalid collection item counts returned from loading %d, expected %d", col.Count(), 0)
+					t.Fatalf("invalid %s item counts returned from loading %d, expected %d", colType, col.Count(), 0)
 				}
 				if remainingItems := col.Collection(); len(remainingItems) != 0 {
-					t.Errorf("invalid collection returned from loading it has %d items: expected empty", len(remainingItems))
+					t.Errorf("invalid %s returned from loading it has %d items: expected empty", colType, len(remainingItems))
 					t.Logf("%s", cmp.Diff(vocab.ItemCollection{}, remainingItems))
 				}
 				return nil
 			})
 			if err != nil {
-				t.Errorf("loaded object wasn't a collection %s: %s", colIRI, err)
+				t.Errorf("loaded object wasn't a(n) %s %s: %v", colType, colIRI, err)
 			}
 		})
 	})
@@ -429,6 +429,42 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 			}
 		}
 	})
+}
+
+func colLabel(typ vocab.Typer) string {
+	switch {
+	case vocab.CollectionType.Match(typ):
+		return "collection"
+	case vocab.CollectionPageType.Match(typ):
+		return "collection page"
+	case vocab.OrderedCollectionType.Match(typ):
+		return "ordered collection"
+	case vocab.OrderedCollectionPageType.Match(typ):
+		return "ordered collection page"
+	default:
+		return "not a collection!!!"
+	}
+	return "unknown"
+}
+func genCountsFor(cnt int) []int {
+	result := make([]int, 0, cnt/2)
+	odd := 1
+	for {
+		half := cnt / 2
+		if half <= 1 {
+			break
+		}
+		cnt = half
+		result = append(result, half)
+	}
+	for i := len(result) - 1; i >= 0; i-- {
+		if ev := result[i]; ev%2 == 0 {
+			result = append(result, ev+odd)
+			odd += 2
+		}
+	}
+	sort.Ints(result)
+	return result
 }
 
 func areItems(a, b any) bool {
@@ -450,3 +486,13 @@ func compareItems(x, y any) bool {
 }
 
 var EquateItems = cmp.FilterValues(areItems, cmp.Comparer(compareItems))
+
+func areItemCollections(a, b any) bool {
+	_, ok1 := a.(vocab.ItemCollection)
+	_, ok3 := a.(*vocab.ItemCollection)
+	_, ok2 := b.(vocab.ItemCollection)
+	_, ok4 := b.(*vocab.ItemCollection)
+	return (ok1 || ok3) && (ok2 || ok4)
+}
+
+var EquateItemCollections = cmp.FilterValues(areItemCollections, cmp.Comparer(compareItems))

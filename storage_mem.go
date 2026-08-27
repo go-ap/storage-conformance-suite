@@ -75,11 +75,17 @@ func (ms *memStorage) Load(i vocab.IRI, f ...filters.Check) (vocab.Item, error) 
 	typ := ob.GetType()
 	switch {
 	case vocab.ActivityVocabularyTypes{vocab.OrderedCollectionType, vocab.OrderedCollectionPageType}.Match(typ):
-		clone, _ := ob.(*vocab.OrderedCollection)
+		clone, err := vocab.ToOrderedCollection(ob)
+		if err != nil {
+			return nil, err
+		}
 		obCopy := *clone
 		return filters.Checks(f).Run(&obCopy), nil
 	case vocab.ActivityVocabularyTypes{vocab.CollectionType, vocab.CollectionPageType}.Match(typ):
-		clone, _ := ob.(*vocab.Collection)
+		clone, err := vocab.ToCollection(ob)
+		if err != nil {
+			return nil, err
+		}
 		obCopy := *clone
 		return filters.Checks(f).Run(&obCopy), nil
 	default:

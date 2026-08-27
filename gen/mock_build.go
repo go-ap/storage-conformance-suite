@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -211,8 +210,13 @@ func DefaultSetter(it vocab.Item) {
 
 var SetItemID = DefaultSetter
 
-func RandomCollection(attrTo vocab.LinkOrIRI) vocab.CollectionInterface {
+var CollectionTypes = vocab.ActivityVocabularyTypes{vocab.OrderedCollectionType, vocab.CollectionType}
+
+func RandomCollection(attrTo vocab.LinkOrIRI) vocab.Item {
 	col := new(vocab.OrderedCollection)
+	//col.Type = CollectionTypes[rand.Intn(len(CollectionTypes))]
+	// NOTE(marius): skip creating unordered collections as we don't have a consistent storage for the items
+	//  See: https://todo.sr.ht/~mariusor/go-activitypub/508
 	col.Type = vocab.OrderedCollectionType
 	col.AttributedTo = attrTo.GetLink()
 	col.Published = getRandomTime()
@@ -249,7 +253,7 @@ func RandomObjectByType(attrTo vocab.Item, typ vocab.ActivityVocabularyType) voc
 	ob.Type = typ
 	ob.AttributedTo = attrTo.GetLink()
 	// NOTE(marius): we use random time, instead of something like time.Now()
-	// because the latter contains monotonic information which gets lost at loading form the mock storage we're using
+	//  because the latter contains monotonic information which gets lost at loading form the mock storage we're using
 	ob.Published = getRandomTime()
 
 	_ = vocab.OnObject(ob, setContentByType(typ))
@@ -277,6 +281,17 @@ func RandomPlace(attrTo vocab.LinkOrIRI) vocab.Item {
 	p.AttributedTo = attrTo.GetLink()
 	p.Published = getRandomTime()
 	p.Type = vocab.PlaceType
+	p.Audience = publicAudience
+	SetItemID(p)
+	return p
+}
+
+func RandomTombstone(attrTo vocab.LinkOrIRI) vocab.Item {
+	p := new(vocab.Tombstone)
+	p.AttributedTo = attrTo.GetLink()
+	p.Published = getRandomTime()
+	p.Type = vocab.TombstoneType
+	p.FormerType = getRandomActorType()
 	p.Audience = publicAudience
 	SetItemID(p)
 	return p
@@ -359,18 +374,29 @@ func getObjectTypes(data []byte) (vocab.ActivityVocabularyType, vocab.MimeType) 
 	return objectType, vocab.MimeType(contentType)
 }
 
+func SortItemCollectionByTimestamp(items vocab.ItemCollection) {
+	slices.SortFunc(items, vocab.ItemOrderByTimestamp)
+}
+
 func SortItemCollectionByID(items vocab.ItemCollection) {
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].GetLink().String() <= items[j].GetLink().String()
+	slices.SortFunc(items, func(a, b vocab.Item) int {
+		return strings.Compare(a.GetLink().String(), b.GetLink().String())
 	})
 }
 
 func RandomItemCollection(count int, attrTo vocab.LinkOrIRI) vocab.ItemCollection {
 	items := make(vocab.ItemCollection, 0, count)
 	for range count {
-		items = append(items, RandomObject(attrTo))
+		items = append(items, RandomItem(attrTo))
 	}
-	SortItemCollectionByID(items)
+	return items
+}
+
+func RandomObjects(count int, attrTo vocab.LinkOrIRI) vocab.ItemCollection {
+	items := make(vocab.ItemCollection, 0, count)
+	for range count {
+		items = append(items, RandomNonActivity(attrTo))
+	}
 	return items
 }
 
@@ -450,8 +476,13 @@ func RandomQuestion(attrTo vocab.LinkOrIRI) vocab.Item {
 	act.Published = getRandomTime()
 
 	oneOf := rand.Intn(2) == 1
+
 	count := rand.Intn(10)
-	opts := RandomItemCollection(count, attrTo)
+	opts := make(vocab.ItemCollection, 0, count)
+	for range count {
+		opts = append(opts, RandomObject(attrTo))
+	}
+
 	if oneOf {
 		act.OneOf = opts
 	} else {
@@ -571,7 +602,7 @@ func RandomLink(_ vocab.LinkOrIRI) vocab.Item {
 }
 
 func CreateActivity(ob vocab.LinkOrIRI, attrTo vocab.LinkOrIRI) vocab.Item {
-	act := new(vocab.Activity)
+	act := new(vocab.Create)
 	act.Type = vocab.CreateType
 	act.AttributedTo = attrTo.GetLink()
 	act.Actor = attrTo.GetLink()
@@ -590,9 +621,11 @@ var nonActivityGenFns = []generatorFn{
 	RandomObject,
 	RandomPlace,
 	RandomProfile,
+	RandomTombstone,
 	RandomActor,
 	RandomLink,
 	RandomTag,
+	RandomCollection,
 }
 
 func RandomNonActivity(attrTo vocab.LinkOrIRI) vocab.Item {
