@@ -291,10 +291,8 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				if len(savedItems) != len(randomObjects) {
 					t.Fatalf("invalid %s item counts returned from loading %d, expected %d", colType, len(savedItems), len(randomObjects))
 				}
-				for i, it := range randomObjects {
-					if !cmp.Equal(it, savedItems[i]) {
-						t.Errorf("invalid item at pos %d, unable: %s", i, cmp.Diff(it, savedItems[i]))
-					}
+				if !cmp.Equal(randomObjects, savedItems, EquateItemCollections) {
+					t.Errorf("invalid items returned from loading: %s", cmp.Diff(randomObjects, savedItems, EquateItemCollections))
 				}
 				return nil
 			})
