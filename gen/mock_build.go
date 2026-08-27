@@ -213,14 +213,25 @@ var SetItemID = DefaultSetter
 var CollectionTypes = vocab.ActivityVocabularyTypes{vocab.OrderedCollectionType, vocab.CollectionType}
 
 func RandomCollection(attrTo vocab.LinkOrIRI) vocab.Item {
-	col := new(vocab.OrderedCollection)
-	//col.Type = CollectionTypes[rand.Intn(len(CollectionTypes))]
 	// NOTE(marius): skip creating unordered collections as we don't have a consistent storage for the items
 	//  See: https://todo.sr.ht/~mariusor/go-activitypub/508
-	col.Type = vocab.OrderedCollectionType
-	col.AttributedTo = attrTo.GetLink()
-	col.Published = getRandomTime()
-	SetItemID(col)
+	//typ := vocab.OrderedCollectionType
+	typ := CollectionTypes[rand.Intn(len(CollectionTypes))]
+
+	var col vocab.Item
+	switch {
+	case vocab.OrderedCollectionType.Match(typ):
+		col = new(vocab.OrderedCollection)
+	case vocab.CollectionType.Match(typ):
+		col = new(vocab.Collection)
+	}
+	_ = vocab.OnObject(col, func(col *vocab.Object) error {
+		col.Type = typ
+		col.AttributedTo = attrTo.GetLink()
+		col.Published = getRandomTime()
+		SetItemID(col)
+		return nil
+	})
 
 	return col
 }
