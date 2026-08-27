@@ -291,10 +291,6 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				if len(savedItems) != len(randomObjects) {
 					t.Fatalf("invalid %s item counts returned from loading %d, expected %d", colType, len(savedItems), len(randomObjects))
 				}
-				if vocab.CollectionType.Match(col.GetType()) {
-					gen.SortItemCollectionByID(randomObjects)
-					gen.SortItemCollectionByID(savedItems)
-				}
 				for i, it := range randomObjects {
 					if !cmp.Equal(it, savedItems[i]) {
 						t.Errorf("invalid item at pos %d, unable: %s", i, cmp.Diff(it, savedItems[i]))
@@ -495,4 +491,25 @@ func areItemCollections(a, b any) bool {
 	return (ok1 || ok3) && (ok2 || ok4)
 }
 
-var EquateItemCollections = cmp.FilterValues(areItemCollections, cmp.Comparer(compareItems))
+func compareItemCollections(i1, i2 any) bool {
+	var it1 vocab.ItemCollection
+	var it2 vocab.ItemCollection
+	if a1, ok1 := i1.(vocab.ItemCollection); ok1 {
+		it1 = a1
+	}
+	if a2, ok3 := i1.(*vocab.ItemCollection); ok3 {
+		it1 = *a2
+	}
+	if b1, ok2 := i2.(vocab.ItemCollection); ok2 {
+		it2 = b1
+	}
+	if b2, ok4 := i2.(*vocab.ItemCollection); ok4 {
+		it2 = *b2
+	}
+	// NOTE(marius): discard sorting
+	gen.SortItemCollectionByID(it1)
+	gen.SortItemCollectionByID(it2)
+	return vocab.ItemCollection.Equal(it1, it2)
+}
+
+var EquateItemCollections = cmp.FilterValues(areItemCollections, cmp.Comparer(compareItemCollections))
