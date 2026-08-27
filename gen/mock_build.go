@@ -375,7 +375,7 @@ func getObjectTypes(data []byte) (vocab.ActivityVocabularyType, vocab.MimeType) 
 }
 
 func SortItemCollectionByTimestamp(items vocab.ItemCollection) {
-	slices.SortFunc(items, vocab.ItemOrderByTimestamp)
+	slices.SortFunc(items, vocab.TimestampSortFunc)
 }
 
 func SortItemCollectionByID(items vocab.ItemCollection) {
