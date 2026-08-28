@@ -8,12 +8,12 @@ github.com/bits-and-blooms/bitset v1.25.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/go-ap/activitypub v0.0.0-20260827145613-e5775514bbd3 h1:f4fQ5XzVCD4hhX2fxP6gvFbHmz2WkGJ+0CJKTDWozNk=
-github.com/go-ap/activitypub v0.0.0-20260827145613-e5775514bbd3/go.mod h1:8bv1TUPpVP8p1ED/5I3rBGc6LeDWWxd/GvZ7xTvnQV8=
+github.com/go-ap/activitypub v0.0.0-20260828090159-3a7d0b7e9631 h1:OAz0ssWOavLLZc0B0Z1FmHKcNHTxWwLJlgwpm4VTRh8=
+github.com/go-ap/activitypub v0.0.0-20260828090159-3a7d0b7e9631/go.mod h1:8bv1TUPpVP8p1ED/5I3rBGc6LeDWWxd/GvZ7xTvnQV8=
 github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394 h1:PK7N5OJVsotfSuzc3/s0CGqLN8tYFAixg36C6SpOB9Q=
 github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394/go.mod h1:dqDuYtQWH2GLodzfE+wKsEXEkWSHoGW43JZwGJapgX4=
-github.com/go-ap/filters v0.0.0-20260827145912-8dcbd587c42a h1:hcGXcb7//jdeaTe3EOhN2zoMBO7T0vGf7d+bXlkDvCo=
-github.com/go-ap/filters v0.0.0-20260827145912-8dcbd587c42a/go.mod h1:SJ+FOVzzWt3ts7WADOwF9ZjZ5jupv8VzzfAbFEQt0kc=
+github.com/go-ap/filters v0.0.0-20260828090627-8fe34a6bb3e6 h1:XRqODbh61UnogdbwX3FAJCgTAOORKfaFun43S5iAIDQ=
+github.com/go-ap/filters v0.0.0-20260828090627-8fe34a6bb3e6/go.mod h1:bpOSMheqoSgUQ/3B0f1S+IprAGfBFo9jWj1YpGerON8=
 github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38 h1:YB/gyKeZxzCOo0G0xUWGchXRm3sy/52tQk9WBr/2nEA=
 github.com/go-ap/jsonld v0.0.0-20260607140920-737b40e0ca38/go.mod h1:4h93IBxgfnE/DEleMLgJ/XCeu/RtQ+MUh3ucANseeXA=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=

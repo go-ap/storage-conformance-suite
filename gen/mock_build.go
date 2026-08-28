@@ -284,6 +284,7 @@ func RandomProfile(attrTo vocab.LinkOrIRI) vocab.Item {
 	p.Type = vocab.ProfileType
 	p.Audience = publicAudience
 	SetItemID(p)
+	_ = vocab.OnObject(p, SetObjectCollections)
 	return p
 }
 
@@ -294,6 +295,7 @@ func RandomPlace(attrTo vocab.LinkOrIRI) vocab.Item {
 	p.Type = vocab.PlaceType
 	p.Audience = publicAudience
 	SetItemID(p)
+	_ = vocab.OnObject(p, SetObjectCollections)
 	return p
 }
 
@@ -347,11 +349,16 @@ func RandomObject(attrTo vocab.LinkOrIRI) vocab.Item {
 	SetItemID(ob)
 	ob.Audience = publicAudience
 
+	SetObjectCollections(ob)
+
+	return ob
+}
+
+func SetObjectCollections(ob *vocab.Object) error {
 	ob.Replies = vocab.Replies.IRI(ob)
 	ob.Likes = vocab.Likes.IRI(ob)
 	ob.Shares = vocab.Shares.IRI(ob)
-
-	return ob
+	return nil
 }
 
 var svgDocumentStart = []byte{'<', 's', 'v', 'g'}
@@ -571,6 +578,7 @@ func RandomTag(attrTo vocab.LinkOrIRI) vocab.Item {
 	tag.Published = getRandomTime()
 	tag.Audience = publicAudience
 	SetItemID(tag)
+	_ = vocab.OnObject(tag, SetObjectCollections)
 	return tag
 }
 
