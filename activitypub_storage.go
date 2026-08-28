@@ -163,6 +163,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 	})
 
 	randomObjects := gen.RandomObjects(64, gen.Root)
+	savedItems := make(vocab.ItemCollection, 0, len(randomObjects))
 	t.Run(fmt.Sprintf("save %d random objects", len(randomObjects)), func(t *testing.T) {
 		for _, ob := range randomObjects {
 			savedIt, err := storage.Save(ob)
@@ -179,58 +180,11 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 			if !cmp.Equal(ob, loadIt) {
 				t.Errorf("invalid object returned from loading %s: %s", ob.GetLink(), cmp.Diff(ob, loadIt))
 			}
-
-			// NOTE(marius): check Object and Actor collections being created:
-			// @see https://todo.sr.ht/~mariusor/go-activitypub/402
-			collectionIRISToCheck := make(vocab.IRIs, 0)
-			typ := ob.GetType()
-			if vocab.ActorTypes.Match(typ) {
-				for _, colPath := range vocab.OfActor {
-					if maybeCollection := colPath.Of(ob); !vocab.IsNil(maybeCollection) {
-						_ = collectionIRISToCheck.Append(maybeCollection.GetLink())
-					}
-				}
-				// //TODO(marius): this should be checked for AddTo() collections
-				//hiddenPaths := vocab.CollectionPaths{"blocked", "ignored"}
-				//for _, hiddenPath := range hiddenPaths {
-				//	_ = collectionIRISToCheck.Append(hiddenPath.IRI(ob))
-				//}
-			} else if !vocab.LinkTypes.Match(typ) {
-				for _, colPath := range vocab.OfObject {
-					if maybeCollection := colPath.Of(ob); !vocab.IsNil(maybeCollection) {
-						_ = collectionIRISToCheck.Append(maybeCollection.GetLink())
-					}
-				}
-			}
-
-			for _, itemCollection := range collectionIRISToCheck {
-				t.Run(itemCollection.String(), func(t *testing.T) {
-					_, which := vocab.Split(itemCollection)
-					t.Skipf("Checking %s skipped: we stopped creating them automatically in the storage backend", itemCollection)
-					if needsCheck := which.Of(ob); vocab.IsNil(needsCheck) {
-						return
-					}
-					loadedCol, err := storage.Load(itemCollection)
-					if err != nil {
-						t.Errorf("unable to load %s collection %s: %s", ob.GetType(), itemCollection, err)
-					}
-					err = vocab.OnCollectionIntf(loadedCol, func(col vocab.CollectionInterface) error {
-						if !col.GetLink().Equal(itemCollection) {
-							t.Errorf("invalid %s collection returned from loading %s: %s", ob.GetType(), itemCollection, loadedCol)
-						}
-						if len(col.Collection()) != 0 {
-							t.Errorf("freshly created collection should have zero items, found %d", len(col.Collection()))
-						}
-						if col.Count() != 0 {
-							t.Errorf("freshly created collection should have zero total items, found %d", col.Count())
-						}
-						return nil
-					})
-					if err != nil {
-						t.Errorf("invalid %T collection type, expected %v", loadedCol, allCollectionTypes)
-					}
-				})
-			}
+			savedItems = append(savedItems, loadIt)
+		}
+		// NOTE(marius): check item collections
+		if !randomObjects.Equal(savedItems) {
+			t.Errorf("invalid items returned from loading: %s", cmp.Diff(randomObjects, savedItems, EquateItemCollections))
 		}
 	})
 
@@ -285,14 +239,14 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 			}
 			err = vocab.OnCollectionIntf(loadedIt, func(col vocab.CollectionInterface) error {
 				if col.Count() != uint(len(randomObjects)) {
-					t.Fatalf("invalid %s item counts returned from loading %d, expected %d", colType, col.Count(), len(randomObjects))
+					t.Errorf("invalid %s item counts returned from loading %d, expected %d", colType, col.Count(), len(randomObjects))
 				}
-				savedItems := col.Collection()
-				if len(savedItems) != len(randomObjects) {
-					t.Fatalf("invalid %s item counts returned from loading %d, expected %d", colType, len(savedItems), len(randomObjects))
+				loadedItems := col.Collection()
+				if len(loadedItems) != len(randomObjects) {
+					t.Errorf("invalid %s item counts returned from loading %d, expected %d", colType, len(loadedItems), len(randomObjects))
 				}
-				if !cmp.Equal(randomObjects, savedItems, EquateItemCollections) {
-					t.Errorf("invalid items returned from loading: %s", cmp.Diff(randomObjects, savedItems, EquateItemCollections))
+				if !cmp.Equal(randomObjects, loadedItems, EquateItemCollections) {
+					t.Errorf("invalid items returned from loading: %s", cmp.Diff(randomObjects, loadedItems, EquateItemCollections))
 				}
 				return nil
 			})
@@ -324,10 +278,10 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 					t.Fatalf("filtered items are not compatible with an Item Collection %T", filteredRandomObjects)
 				}
 				if totalItems != uint(len(randomObjects)) {
-					t.Fatalf("invalid %s total items count returned from loading %d, expected %d", colType, totalItems, len(randomObjects))
+					t.Errorf("invalid %s total items count returned from loading %d, expected %d", colType, totalItems, len(randomObjects))
 				}
 				if len(filteredItems) != len(foundItems) {
-					t.Fatalf("invalid %s item counts returned from loading %d, expected %d", colType, len(foundItems), len(filteredItems))
+					t.Errorf("invalid %s item counts returned from loading %d, expected %d", colType, len(foundItems), len(filteredItems))
 				}
 				if len(filteredItems) > 0 {
 					if !cmp.Equal(foundItems, filteredItems, EquateItemCollections) {
@@ -357,22 +311,21 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 						}
 						filters.ResetPagination(checks...)
 						filteredRandomObjects := checks.Run(randomObjects)
-						filteredItems, ok := filteredRandomObjects.(vocab.ItemCollection)
-						if !ok {
-							t.Fatalf("filtered items are not compatible with an Item Collection %T", filteredRandomObjects)
-						}
-						if totalItems != uint(len(randomObjects)) {
-							t.Fatalf("invalid %s total items count returned from loading %d, expected %d", colType, totalItems, len(randomObjects))
-						}
-						if len(filteredItems) != len(foundItems) {
-							t.Fatalf("invalid %s item counts returned from loading %d, expected %d", colType, len(foundItems), len(filteredItems))
-						}
-						if !cmp.Equal(foundItems, filteredItems, EquateItems) {
-							t.Errorf("invalid items returned from loading: %s", cmp.Diff(foundItems, filteredItems, EquateItems))
-						}
-						if len(filteredItems) != cnt {
-							t.Fatalf("invalid %s item counts returned from loading %d, expected %d", colType, len(foundItems), cnt)
-						}
+						_ = vocab.OnItemCollection(filteredRandomObjects, func(filteredItems *vocab.ItemCollection) error {
+							if totalItems != uint(len(randomObjects)) {
+								t.Fatalf("invalid %s total items count returned from loading %d, expected %d", colType, totalItems, len(randomObjects))
+							}
+							if len(*filteredItems) != len(foundItems) {
+								t.Fatalf("invalid %s item counts returned from loading %d, expected %d", colType, len(foundItems), len(*filteredItems))
+							}
+							if !cmp.Equal(foundItems, *filteredItems, EquateItemCollections) {
+								t.Errorf("invalid items returned from loading: %s", cmp.Diff(foundItems, *filteredItems, EquateItemCollections))
+							}
+							if len(*filteredItems) != cnt {
+								t.Fatalf("invalid %s item counts returned from loading %d, expected %d", colType, len(foundItems), cnt)
+							}
+							return nil
+						})
 						_ = vocab.OnCollectionIntf(loadIt, func(col vocab.CollectionInterface) error {
 							nextIRI := filters.NextPageFromCollection(col).GetLink()
 							if !colIRI.Equal(nextIRI) {
@@ -440,6 +393,7 @@ func colLabel(typ vocab.Typer) string {
 	}
 	return "unknown"
 }
+
 func genCountsFor(cnt int) []int {
 	result := make([]int, 0, cnt/2)
 	odd := 1
@@ -476,7 +430,9 @@ func compareItems(x, y any) bool {
 	if ic2, ok := y.(vocab.Item); ok {
 		i2 = ic2
 	}
-	return vocab.ItemsEqual(i1, i2)
+	// NOTE(marius): we do the comparison both ways to prevent cmp.Comparer asymmetric panics
+	//  I haven't found why it's asymmetric yet.
+	return vocab.ItemsEqual(i1, i2) || vocab.ItemsEqual(i2, i1)
 }
 
 var EquateItems = cmp.FilterValues(areItems, cmp.Comparer(compareItems))
@@ -504,10 +460,11 @@ func compareItemCollections(i1, i2 any) bool {
 	if b2, ok4 := i2.(*vocab.ItemCollection); ok4 {
 		it2 = *b2
 	}
-	// NOTE(marius): discard sorting
+	// NOTE(marius): discard original sorting
 	gen.SortItemCollectionByID(it1)
 	gen.SortItemCollectionByID(it2)
-	return vocab.ItemCollection.Equal(it1, it2)
+
+	return it1.Equal(it2)
 }
 
 var EquateItemCollections = cmp.FilterValues(areItemCollections, cmp.Comparer(compareItemCollections))

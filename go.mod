@@ -3,9 +3,9 @@ module github.com/go-ap/storage-conformance-suite
 go 1.25.0
 
 require (
-	github.com/go-ap/activitypub v0.0.0-20260828090159-3a7d0b7e9631
+	github.com/go-ap/activitypub v0.0.0-20260828142325-6c1da3fca413
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
-	github.com/go-ap/filters v0.0.0-20260828090627-8fe34a6bb3e6
+	github.com/go-ap/filters v0.0.0-20260828143704-b6f12edfe3ec
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20210113124101-8612686d6dda
 	golang.org/x/crypto v0.55.0
@@ -24,7 +24,6 @@ require (
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fastjson v1.6.10 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
