@@ -295,6 +295,8 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 			t.Run(fmt.Sprintf("traverse %s with pagination %d", colType, cnt), func(t *testing.T) {
 				for range len(randomObjects) / cnt {
 					t.Run(fmt.Sprintf("query %s with filters %#v", colType, checks), func(t *testing.T) {
+						filteredRandomObjects := checks.Run(randomObjects)
+						// NOTE(marius): we don't need to reset the filters, as the pagination logic already does so.
 						loadIt, err := storage.Load(colIRI, checks...)
 						if err != nil {
 							t.Errorf("unable to load %s %s: %v", colType, colIRI, err)
@@ -309,8 +311,6 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 						if err != nil {
 							t.Errorf("loaded object wasn't a %s %s: %v", colType, colIRI, err)
 						}
-						filters.ResetPagination(checks...)
-						filteredRandomObjects := checks.Run(randomObjects)
 						_ = vocab.OnItemCollection(filteredRandomObjects, func(filteredItems *vocab.ItemCollection) error {
 							if totalItems != uint(len(randomObjects)) {
 								t.Fatalf("invalid %s total items count returned from loading %d, expected %d", colType, totalItems, len(randomObjects))
@@ -364,16 +364,19 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 
 	t.Run(fmt.Sprintf("delete %d random objects", len(randomObjects)), func(t *testing.T) {
 		for _, ob := range randomObjects {
-			if err := storage.Delete(ob); err != nil {
-				t.Errorf("unable to save object: %s", err)
-			}
-			loadIt, err := storage.Load(ob.GetLink())
-			if err != nil && !errors.IsNotFound(err) {
-				t.Errorf("unable to load object %s: %s", ob.GetLink(), err)
-			}
-			if loadIt != nil {
-				t.Errorf("invalid object returned from loading %s: it should have been empty", ob.GetLink())
-			}
+			iri := string(ob.GetLink())
+			t.Run(fmt.Sprintf("delete random item %s", iri), func(t *testing.T) {
+				if err := storage.Delete(ob); err != nil {
+					t.Errorf("unable to save object: %s", err)
+				}
+				loadIt, err := storage.Load(ob.GetLink())
+				if err != nil && !errors.IsNotFound(err) {
+					t.Errorf("unable to load object %s: %s", ob.GetLink(), err)
+				}
+				if loadIt != nil {
+					t.Errorf("invalid object returned from loading %s: it should have been empty", ob.GetLink())
+				}
+			})
 		}
 	})
 }
