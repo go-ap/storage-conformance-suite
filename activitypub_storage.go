@@ -271,7 +271,6 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				if err != nil {
 					t.Errorf("loaded object wasn't a(n) %s %s: %v", colType, colIRI, err)
 				}
-				filters.ResetPagination(fil...)
 				filteredRandomObjects := fil.Run(randomObjects)
 				filteredItems, ok := filteredRandomObjects.(vocab.ItemCollection)
 				if !ok {
@@ -463,11 +462,20 @@ func compareItemCollections(i1, i2 any) bool {
 	if b2, ok4 := i2.(*vocab.ItemCollection); ok4 {
 		it2 = *b2
 	}
-	// NOTE(marius): discard original sorting
-	gen.SortItemCollectionByID(it1)
-	gen.SortItemCollectionByID(it2)
 
-	return it1.Equal(it2)
+	// NOTE(marius): make copies of the item collections so we don't interfere
+	//  with their sorting outside of this specific comparison.
+	c1 := make(vocab.ItemCollection, 0, len(it1))
+	c2 := make(vocab.ItemCollection, 0, len(it2))
+
+	copy(c1, it1)
+	copy(c2, it2)
+
+	// NOTE(marius): discard original sorting
+	gen.SortItemCollectionByID(c1)
+	gen.SortItemCollectionByID(c2)
+
+	return c1.Equal(c2)
 }
 
 var EquateItemCollections = cmp.FilterValues(areItemCollections, cmp.Comparer(compareItemCollections))

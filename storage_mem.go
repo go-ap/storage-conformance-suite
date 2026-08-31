@@ -404,7 +404,7 @@ func (ms *memStorage) LoadMetadata(iri vocab.IRI, m any) error {
 	if !ok {
 		return errors.Errorf("unable to find metadata for iri %s", iri)
 	}
-	copy(metaAny, m)
+	copyT(metaAny, m)
 	return nil
 }
 
@@ -423,7 +423,7 @@ var _ ClientLister = &memStorage{}
 var _ ClientSaver = &memStorage{}
 
 // copy copies from one instance of type T to another
-func copy[T any](from, to T) {
+func copyT[T any](from, to T) {
 	r := reflect.ValueOf(to).Elem()
 	r.Set(reflect.ValueOf(from))
 }
