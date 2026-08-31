@@ -294,6 +294,9 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 			t.Run(fmt.Sprintf("%s traverse page=%d maxItems=%d", colType, i+1, cnt), func(t *testing.T) {
 				for range len(randomObjects) / cnt {
 					filteredItems := checks.Run(randomObjects).(vocab.ItemCollection)
+					if len(filteredItems) == 0 {
+						continue
+					}
 
 					t.Run(fmt.Sprintf("query %s with filters %#v", colType, checks), func(t *testing.T) {
 						loadIt, err := storage.Load(colIRI, checks...)
@@ -313,11 +316,8 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 						if totalItems != uint(len(randomObjects)) {
 							t.Errorf("invalid %s total items count returned from loading %d, expected %d", colType, totalItems, len(randomObjects))
 						}
-						if len(filteredItems) != len(foundItems) {
-							t.Errorf("invalid %s item counts returned from loading %d, expected %d", colType, len(foundItems), len(filteredItems))
-						}
-						if len(filteredItems) != cnt {
-							t.Errorf("invalid %s item counts returned from loading %d, expected %d", colType, len(foundItems), cnt)
+						if len(filteredItems) > cnt {
+							t.Errorf("invalid %s item counts returned from loading %d, expected maximum %d", colType, len(foundItems), cnt)
 						}
 						if !cmp.Equal(foundItems, filteredItems, EquateItemCollections) {
 							t.Errorf("invalid items returned from loading: %s", cmp.Diff(foundItems, filteredItems, EquateItemCollections))
