@@ -289,13 +289,13 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				}
 			})
 		}
-		for _, cnt := range genCountsFor(len(randomObjects)) {
+		for i, cnt := range genCountsFor(len(randomObjects)) {
 			checks := filters.Checks{filters.WithMaxCount(cnt)}
-			t.Run(fmt.Sprintf("traverse %s with pagination %d", colType, cnt), func(t *testing.T) {
+			t.Run(fmt.Sprintf("%s traverse page=%d maxItems=%d", colType, i+1, cnt), func(t *testing.T) {
 				for range len(randomObjects) / cnt {
+					filteredItems := checks.Run(randomObjects).(vocab.ItemCollection)
+
 					t.Run(fmt.Sprintf("query %s with filters %#v", colType, checks), func(t *testing.T) {
-						filteredRandomObjects := checks.Run(randomObjects)
-						// NOTE(marius): we don't need to reset the filters, as the pagination logic already does so.
 						loadIt, err := storage.Load(colIRI, checks...)
 						if err != nil {
 							t.Errorf("unable to load %s %s: %v", colType, colIRI, err)
@@ -310,21 +310,19 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 						if err != nil {
 							t.Errorf("loaded object wasn't a %s %s: %v", colType, colIRI, err)
 						}
-						_ = vocab.OnItemCollection(filteredRandomObjects, func(filteredItems *vocab.ItemCollection) error {
-							if totalItems != uint(len(randomObjects)) {
-								t.Fatalf("invalid %s total items count returned from loading %d, expected %d", colType, totalItems, len(randomObjects))
-							}
-							if len(*filteredItems) != len(foundItems) {
-								t.Fatalf("invalid %s item counts returned from loading %d, expected %d", colType, len(foundItems), len(*filteredItems))
-							}
-							if !cmp.Equal(foundItems, *filteredItems, EquateItemCollections) {
-								t.Errorf("invalid items returned from loading: %s", cmp.Diff(foundItems, *filteredItems, EquateItemCollections))
-							}
-							if len(*filteredItems) != cnt {
-								t.Fatalf("invalid %s item counts returned from loading %d, expected %d", colType, len(foundItems), cnt)
-							}
-							return nil
-						})
+						if totalItems != uint(len(randomObjects)) {
+							t.Errorf("invalid %s total items count returned from loading %d, expected %d", colType, totalItems, len(randomObjects))
+						}
+						if len(filteredItems) != len(foundItems) {
+							t.Errorf("invalid %s item counts returned from loading %d, expected %d", colType, len(foundItems), len(filteredItems))
+						}
+						if len(filteredItems) != cnt {
+							t.Errorf("invalid %s item counts returned from loading %d, expected %d", colType, len(foundItems), cnt)
+						}
+						if !cmp.Equal(foundItems, filteredItems, EquateItemCollections) {
+							t.Errorf("invalid items returned from loading: %s", cmp.Diff(foundItems, filteredItems, EquateItemCollections))
+						}
+
 						_ = vocab.OnCollectionIntf(loadIt, func(col vocab.CollectionInterface) error {
 							nextIRI := filters.NextPageFromCollection(col).GetLink()
 							if !colIRI.Equal(nextIRI) {
