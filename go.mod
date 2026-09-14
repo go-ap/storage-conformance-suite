@@ -3,9 +3,9 @@ module github.com/go-ap/storage-conformance-suite
 go 1.26.0
 
 require (
-	github.com/go-ap/activitypub v0.0.0-20260913133145-416f1c0ed9a1
+	github.com/go-ap/activitypub v0.0.0-20260914124931-8ec3d41415b0
 	github.com/go-ap/errors v0.0.0-20260701132509-92e5e4fd6394
-	github.com/go-ap/filters v0.0.0-20260913133245-971d96337e18
+	github.com/go-ap/filters v0.0.0-20260914130005-a94e6e63f9e9
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20210113124101-8612686d6dda
 	golang.org/x/crypto v0.55.0
@@ -27,7 +27,7 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fastjson v1.6.10 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
-	quamina.net/go/quamina/v2 v2.0.2 // indirect
+	quamina.net/go/quamina/v2 v2.0.3 // indirect
 )
 
 tool github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt
