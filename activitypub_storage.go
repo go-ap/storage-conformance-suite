@@ -2,6 +2,7 @@ package conformance
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"testing"
 
@@ -405,8 +406,8 @@ func genCountsFor(cnt int) []int {
 		cnt = half
 		result = append(result, half)
 	}
-	for i := len(result) - 1; i >= 0; i-- {
-		if ev := result[i]; ev%2 == 0 {
+	for _, ev := range slices.Backward(result) {
+		if ev%2 == 0 {
 			result = append(result, ev+odd)
 			odd += 2
 		}
@@ -430,12 +431,23 @@ func compareItems(x, y any) bool {
 	if ic2, ok := y.(vocab.Item); ok {
 		i2 = ic2
 	}
-	// NOTE(marius): we do the comparison both ways to prevent cmp.Comparer asymmetric panics
-	//  I haven't found why it's asymmetric yet.
-	return vocab.ItemsEqual(i1, i2) || vocab.ItemsEqual(i2, i1)
+	return vocab.ItemsEqual(i1, i2)
 }
 
-var EquateItems = cmp.FilterValues(areItems, cmp.Comparer(compareItems))
+func areErrors(a, b any) bool {
+	_, ok1 := a.(error)
+	_, ok2 := b.(error)
+	return ok1 && ok2
+}
+
+func compareErrors(x, y any) bool {
+	xe := x.(error)
+	ye := y.(error)
+	if errors.Is(xe, ye) || errors.Is(ye, xe) {
+		return true
+	}
+	return xe.Error() == ye.Error()
+}
 
 func areItemCollections(a, b any) bool {
 	_, ok1 := a.(vocab.ItemCollection)
@@ -476,4 +488,8 @@ func compareItemCollections(i1, i2 any) bool {
 	return c1.Equal(c2)
 }
 
-var EquateItemCollections = cmp.FilterValues(areItemCollections, cmp.Comparer(compareItemCollections))
+var (
+	EquateErrors          = cmp.FilterValues(areErrors, cmp.Comparer(compareErrors))
+	EquateItems           = cmp.FilterValues(areItems, cmp.Comparer(compareItems))
+	EquateItemCollections = cmp.FilterValues(areItemCollections, cmp.Comparer(compareItemCollections))
+)
