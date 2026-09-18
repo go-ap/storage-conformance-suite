@@ -31,9 +31,9 @@ var (
 		ID:                RootID,
 		Type:              vocab.PersonType,
 		Published:         BaseTime,
-		Name:              vocab.DefaultNaturalLanguage("Rooty McRootface"),
-		Summary:           vocab.DefaultNaturalLanguage("The base actor for the conformance test suite"),
-		Content:           vocab.DefaultNaturalLanguage("<p>The base actor for the conformance test suite</p>"),
+		Name:              vocab.DefaultLangValue("Rooty McRootface"),
+		Summary:           vocab.DefaultLangValue("The base actor for the conformance test suite"),
+		Content:           vocab.DefaultLangValue("<p>The base actor for the conformance test suite</p>"),
 		URL:               vocab.Item(RootID),
 		Audience:          publicAudience,
 		To:                publicAudience,
@@ -44,7 +44,7 @@ var (
 		Following:         vocab.Following.IRI(RootID),
 		Followers:         vocab.Followers.IRI(RootID),
 		Liked:             vocab.Liked.IRI(RootID),
-		PreferredUsername: vocab.DefaultNaturalLanguage("root"),
+		PreferredUsername: vocab.DefaultLangValue("root"),
 	}
 
 	typesNeedReasons = vocab.ActivityVocabularyTypes{
@@ -325,16 +325,16 @@ func setContentByType(typ vocab.ActivityVocabularyType) func(ob *vocab.Object) e
 		ob.MediaType = mt
 
 		if len(data) == 0 {
-			ob.Content = vocab.DefaultNaturalLanguage("no data")
+			ob.Content = vocab.DefaultLangValue("no data")
 		} else {
 			if !strings.Contains(string(mt), "text") {
 				buf := make([]byte, base64.RawStdEncoding.EncodedLen(len(data)))
 				base64.RawStdEncoding.Encode(buf, data)
 				data = buf
 			} else {
-				ob.Summary = vocab.DefaultNaturalLanguage(string(data[:bytes.Index(data, []byte{'.'})]))
+				ob.Summary = vocab.DefaultLangValue(string(data[:bytes.Index(data, []byte{'.'})]))
 			}
-			ob.Content = vocab.DefaultNaturalLanguage(string(data))
+			ob.Content = vocab.DefaultLangValue(string(data))
 		}
 		return nil
 	}
@@ -472,8 +472,8 @@ func RandomNonNonContentActivity(ob vocab.LinkOrIRI, attrTo vocab.LinkOrIRI) voc
 	act.Published = getRandomTime()
 
 	if typesNeedReasons.Match(act.Type) {
-		act.Content = vocab.DefaultNaturalLanguage(getRandomReason())
-		act.Summary = vocab.DefaultNaturalLanguage(getRandomReason())
+		act.Content = vocab.DefaultLangValue(getRandomReason())
+		act.Summary = vocab.DefaultLangValue(getRandomReason())
 	}
 	SetItemID(act)
 
@@ -513,7 +513,7 @@ func getRandomActorType() vocab.ActivityVocabularyType {
 
 func RandomActor(attrTo vocab.LinkOrIRI) vocab.Item {
 	act := new(vocab.Actor)
-	act.Name = vocab.DefaultNaturalLanguage(names.GetRandom())
+	act.Name = vocab.DefaultLangValue(names.GetRandom())
 	act.PreferredUsername = act.Name
 	act.Type = getRandomActorType()
 	act.AttributedTo = attrTo.GetLink()
@@ -570,7 +570,7 @@ func getRandomWord() string {
 func RandomTag(attrTo vocab.LinkOrIRI) vocab.Item {
 	tag := new(vocab.Object)
 	tag.AttributedTo = attrTo.GetLink()
-	tag.Name = vocab.DefaultNaturalLanguage("#" + getRandomWord())
+	tag.Name = vocab.DefaultLangValue("#" + getRandomWord())
 	tag.Published = getRandomTime()
 	tag.Audience = publicAudience
 	SetItemID(tag)
@@ -588,7 +588,7 @@ func RandomImage(mime vocab.MimeType, parent vocab.Item) vocab.Item {
 	data := getRandomContentByMimeType(mime)
 	buf := make([]byte, base64.RawStdEncoding.EncodedLen(len(data)))
 	base64.RawStdEncoding.Encode(buf, data)
-	img.Content = vocab.DefaultNaturalLanguage(string(buf))
+	img.Content = vocab.DefaultLangValue(string(buf))
 	SetItemID(img)
 	return img
 }
@@ -598,7 +598,7 @@ func getRandomLinkType() vocab.ActivityVocabularyType {
 }
 
 func getRandomName() vocab.NaturalLanguageValues {
-	return vocab.DefaultNaturalLanguage(names.GetRandom())
+	return vocab.DefaultLangValue(names.GetRandom())
 }
 
 func getRandomHref() vocab.IRI {
