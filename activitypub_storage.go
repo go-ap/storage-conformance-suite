@@ -225,8 +225,8 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 		if err != nil {
 			t.Errorf("unable to load %s %s: %v", colType, colIRI, err)
 		}
-		if !cmp.Equal(col, loadIt, EquateItems) {
-			t.Errorf("invalid %s returned from loading %s: %s", colType, colIRI, cmp.Diff(col, loadIt, EquateItems))
+		if !cmp.Equal(col, loadIt) {
+			t.Errorf("invalid %s returned from loading %s: %s", colType, colIRI, cmp.Diff(col, loadIt))
 		}
 
 		t.Run(fmt.Sprintf("add %d items to %s", randomObjects.Count(), colType), func(t *testing.T) {
@@ -325,8 +325,10 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 
 						_ = vocab.OnCollectionIntf(loadIt, func(col vocab.CollectionInterface) error {
 							nextIRI := filters.NextPageFromCollection(col).GetLink()
-							if !colIRI.Equal(nextIRI) {
-								checks, _ = filters.FromIRI(nextIRI)
+							if !vocab.EmptyIRI.Equal(nextIRI) && !colIRI.Equal(nextIRI) {
+								if ff, _ := filters.FromIRI(nextIRI); ff != nil {
+									checks = ff
+								}
 							}
 							return nil
 						})

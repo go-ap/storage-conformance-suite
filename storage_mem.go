@@ -59,38 +59,128 @@ var (
 	allCollectionTypes = append(collectionTypes, orderedCollectionTypes...)
 )
 
-func (ms *memStorage) Load(i vocab.IRI, f ...filters.Check) (vocab.Item, error) {
+func (ms *memStorage) Load(i vocab.IRI, checks ...filters.Check) (vocab.Item, error) {
 	raw, ok := ms.Map.Load(i)
 	if !ok {
 		return nil, errors.NotFoundf("unable to find %s", i)
 	}
-	ob, ok := raw.(vocab.Item)
+	it, ok := raw.(vocab.Item)
 	if !ok {
 		return nil, errors.Newf("invalid item type in storage %T", raw)
 	}
 
-	if len(f) == 0 {
-		return ob, nil
-	}
-	typ := ob.GetType()
+	intransitiveChecks := filters.IntransitiveActivityChecks(checks...)
+	activityChecks := filters.ActivityChecks(checks...)
+	actorChecks := filters.ActorChecks(checks...)
+	objectChecks := filters.ObjectChecks(checks...)
+
+	authorizedChecks := filters.AuthorizedChecks(checks...)
+
+	typ := it.GetType()
+	// NOTE(marius): this can probably expedite filtering if we early exit when we fail to load the
+	// properties that need to be loaded for sub-filters.
+	var err error
 	switch {
-	case vocab.ActivityVocabularyTypes{vocab.OrderedCollectionType, vocab.OrderedCollectionPageType}.Match(typ):
-		clone, err := vocab.ToOrderedCollection(ob)
-		if err != nil {
-			return nil, err
-		}
-		obCopy := *clone
-		return filters.Checks(f).Run(&obCopy), nil
-	case vocab.ActivityVocabularyTypes{vocab.CollectionType, vocab.CollectionPageType}.Match(typ):
-		clone, err := vocab.ToCollection(ob)
-		if err != nil {
-			return nil, err
-		}
-		obCopy := *clone
-		return filters.Checks(f).Run(&obCopy), nil
-	default:
-		return ob, nil
+	case vocab.IntransitiveActivityTypes.Match(typ):
+		intransitiveChecks = append(intransitiveChecks, authorizedChecks...)
+		err = vocab.OnIntransitiveActivity(it, loadFilteredPropsForIntransitiveActivity(ms, intransitiveChecks...))
+	case vocab.ActivityTypes.Match(typ):
+		activityChecks = append(activityChecks, authorizedChecks...)
+		err = vocab.OnActivity(it, loadFilteredPropsForActivity(ms, activityChecks...))
+	case vocab.ActorTypes.Match(typ):
+		actorChecks = append(actorChecks, authorizedChecks...)
+		err = vocab.OnActor(it, loadFilteredPropsForActor(ms, actorChecks...))
+	case vocab.ObjectTypes.Match(typ):
+		objectChecks = append(objectChecks, authorizedChecks...)
+		err = vocab.OnObject(it, loadFilteredPropsForObject(ms, objectChecks...))
+	case allCollectionTypes.Match(typ):
+		// NOTE(marius): for the collections that we loaded from the memory store, we need to
+		// filter their items on a clone, otherwise the stored value gets modified.
+		it = vocab.Clone(it)
 	}
+	// NOTE(marius): this is done another time, in order to paginate collections
+	return filters.Checks(checks).Run(it), err
+}
+
+func loadFilteredPropsForIntransitiveActivity(ms *memStorage, checks ...filters.Check) vocab.WithIntransitiveActivityFn {
+	targetChecks := filters.TargetChecks(checks...)
+	actorChecks := filters.ActorChecks(checks...)
+	return func(a *vocab.IntransitiveActivity) error {
+		var err error
+		if !vocab.IsNil(a.Target) && len(targetChecks) > 0 && !a.ID.Equal(a.Target.GetLink()) {
+			if a.Target, err = dereferenceItemAndFilter(ms, a.Target, targetChecks...); err != nil {
+				return err
+			}
+		}
+		if !vocab.IsNil(a.Actor) && len(actorChecks) > 0 && !a.ID.Equal(a.Actor.GetLink()) {
+			if a.Actor, err = dereferenceItemAndFilter(ms, a.Actor, actorChecks...); err != nil {
+				return err
+			}
+		}
+		return vocab.OnObject(a, loadFilteredPropsForObject(ms, checks...))
+	}
+}
+
+func loadFilteredPropsForActivity(ms *memStorage, checks ...filters.Check) vocab.WithActivityFn {
+	objectChecks := filters.ObjectChecks(checks...)
+	return func(a *vocab.Activity) error {
+		if !vocab.IsNil(a.Object) && !a.ID.Equal(a.Object.GetLink()) {
+			var err error
+			if a.Object, err = dereferenceItemAndFilter(ms, a.Object, objectChecks...); err != nil {
+				return err
+			}
+		}
+		return vocab.OnIntransitiveActivity(a, loadFilteredPropsForIntransitiveActivity(ms, checks...))
+	}
+}
+
+func loadFilteredPropsForActor(ms *memStorage, checks ...filters.Check) vocab.WithActorFn {
+	return func(actor *vocab.Actor) error {
+		return vocab.OnObject(actor, loadFilteredPropsForObject(ms, checks...))
+	}
+}
+
+func loadFilteredPropsForObject(ms *memStorage, fil ...filters.Check) func(o *vocab.Object) error {
+	tagChecks := filters.TagChecks(fil...)
+	if len(tagChecks) == 0 {
+		tagChecks = filters.Checks{filters.NoType}
+	}
+	return func(o *vocab.Object) error {
+		if vocab.IsNil(o.Tag) {
+			return nil
+		}
+		var err error
+		o.Tag, err = dereferenceItemAndFilter(ms, o.Tag, tagChecks...)
+		return err
+	}
+}
+
+func dereferenceItemAndFilter(ms *memStorage, it vocab.Item, checks ...filters.Check) (vocab.Item, error) {
+	if vocab.IsNil(it) {
+		return it, nil
+	}
+	if len(checks) == 0 {
+		// NOTE(marius): no filtering on the object
+		return it, nil
+	}
+
+	res := make(vocab.ItemCollection, 0)
+	err := vocab.OnItem(it, func(iit vocab.Item) error {
+		if vocab.IsNil(iit) {
+			return nil
+		}
+		if vocab.IsIRI(iit) {
+			o, err := ms.Load(iit.GetLink())
+			if err != nil {
+				return nil
+			}
+			if o = filters.Checks(checks).Run(o); o != nil {
+				iit = o
+			}
+		}
+		return res.Append(iit)
+	})
+	return res.Normalize(), err
 }
 
 func saveCollectionIfExists(r *memStorage, it, owner vocab.Item) vocab.Item {
