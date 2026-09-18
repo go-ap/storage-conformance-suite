@@ -159,7 +159,7 @@ func typeAsString(typ vocab.Typer) string {
 	if tt, ok := typ.(vocab.ActivityVocabularyTypes); ok && len(tt) > 0 {
 		return string(tt[0])
 	}
-	return "unknown"
+	return "tag"
 }
 
 func setObjectID(ob *vocab.Object) error {
@@ -268,11 +268,9 @@ func RandomObjectByType(attrTo vocab.Item, typ vocab.ActivityVocabularyType) voc
 	ob.Published = getRandomTime()
 
 	_ = vocab.OnObject(ob, setContentByType(typ))
-	SetItemID(ob)
 
-	ob.Replies = vocab.Replies.IRI(ob)
-	ob.Likes = vocab.Likes.IRI(ob)
-	ob.Shares = vocab.Shares.IRI(ob)
+	SetItemID(ob)
+	_ = vocab.OnObject(ob, SetObjectCollections)
 
 	return ob
 }
@@ -300,14 +298,14 @@ func RandomPlace(attrTo vocab.LinkOrIRI) vocab.Item {
 }
 
 func RandomTombstone(attrTo vocab.LinkOrIRI) vocab.Item {
-	p := new(vocab.Tombstone)
-	p.AttributedTo = attrTo.GetLink()
-	p.Published = getRandomTime()
-	p.Type = vocab.TombstoneType
-	p.FormerType = getRandomActorType()
-	p.Audience = publicAudience
-	SetItemID(p)
-	return p
+	t := new(vocab.Tombstone)
+	t.AttributedTo = attrTo.GetLink()
+	t.Published = getRandomTime()
+	t.Type = vocab.TombstoneType
+	t.FormerType = getRandomActorType()
+	t.Audience = publicAudience
+	SetItemID(t)
+	return t
 }
 
 func setContentByType(typ vocab.ActivityVocabularyType) func(ob *vocab.Object) error {
@@ -338,6 +336,14 @@ func setContentByType(typ vocab.ActivityVocabularyType) func(ob *vocab.Object) e
 		}
 		return nil
 	}
+}
+
+func RandomTags(parent vocab.LinkOrIRI, cnt int) vocab.ItemCollection {
+	tags := make(vocab.ItemCollection, 0, cnt)
+	for range cnt {
+		_ = tags.Append(RandomTag(parent))
+	}
+	return tags
 }
 
 func RandomObject(attrTo vocab.LinkOrIRI) vocab.Item {
@@ -406,10 +412,39 @@ func RandomItemCollection(count int, attrTo vocab.LinkOrIRI) vocab.ItemCollectio
 	return items
 }
 
+func ItemCollectionFromLinkSlice(col []vocab.LinkOrIRI) vocab.ItemCollection {
+	res := make(vocab.ItemCollection, 0, len(col))
+	for _, li := range col {
+		if it, ok := li.(vocab.Item); ok {
+			_ = res.Append(it)
+		}
+	}
+	return res
+}
+
 func RandomObjects(count int, attrTo vocab.LinkOrIRI) vocab.ItemCollection {
 	items := make(vocab.ItemCollection, 0, count)
 	for range count {
-		items = append(items, RandomNonActivity(attrTo))
+		_ = items.Append(RandomNonActivity(attrTo))
+	}
+
+	tags := filters.Checks{filters.NoType}.Run(items).(vocab.ItemCollection)
+	for _, it := range items {
+		if vocab.NilType.Match(it.GetType()) {
+			// NOTE(marius): skip on tag items to avoid having a tag referencing itself and triggering a stack overflow
+			continue
+		}
+		if rand.Intn(2) == 0 {
+			// NOTE(marius): also skip on two thirds of remaining items
+			continue
+		}
+		_ = vocab.OnObject(it, func(ob *vocab.Object) error {
+			// NOTE(marius): sample some random tags and set them as the Tag property on the object
+			randomTags := ItemCollectionFromLinkSlice(RandomFromCollection(tags, rand.Intn(len(tags)/2)))
+			ob.Tag = randomTags.Normalize()
+			return nil
+		})
+
 	}
 	return items
 }
@@ -656,6 +691,31 @@ func RandomPlausible(cnt int) vocab.ItemCollection {
 		}
 	}
 	return result
+}
+
+func RandomFromCollection(col vocab.ItemCollection, cnt int) []vocab.LinkOrIRI {
+	if len(col) == 0 {
+		return nil
+	}
+	ri := make([]int, 0, cnt)
+	for range cnt {
+		for {
+			r := rand.Intn(len(col))
+			if !slices.Contains(ri, r) {
+				ri = append(ri, r)
+				break
+			}
+		}
+	}
+	res := make([]vocab.LinkOrIRI, 0, cnt)
+	for i := range ri {
+		for j, it := range col {
+			if i == j {
+				res = append(res, it)
+			}
+		}
+	}
+	return res
 }
 
 func PlausibleStorage(attrTo vocab.Item, cnt int) []vocab.LinkOrIRI {

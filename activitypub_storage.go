@@ -164,28 +164,27 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 	})
 
 	randomObjects := gen.RandomObjects(64, gen.Root)
-	savedItems := make(vocab.ItemCollection, 0, len(randomObjects))
 	t.Run(fmt.Sprintf("save %d random objects", len(randomObjects)), func(t *testing.T) {
 		for _, ob := range randomObjects {
-			savedIt, err := storage.Save(ob)
+			flat := flatCopyForSave(ob)
+			savedIt, err := storage.Save(flat)
 			if err != nil {
 				t.Errorf("unable to save object: %s", err)
 			}
-			if !cmp.Equal(ob, savedIt) {
+			if !cmp.Equal(flat, savedIt) {
 				t.Errorf("invalid object returned from saving %s", cmp.Diff(ob, savedIt))
 			}
-			loadIt, err := storage.Load(savedIt.GetLink())
+		}
+		// NOTE(marius): check saved items _after_ we saved everything, this allows the storage backend to have
+		// all property values (Actor, Object, Tags) that might have been later in the collection.
+		for _, ob := range randomObjects {
+			loadIt, err := storage.Load(ob.GetLink())
 			if err != nil {
 				t.Errorf("unable to load object %s: %s", ob.GetLink(), err)
 			}
 			if !cmp.Equal(ob, loadIt) {
 				t.Errorf("invalid object returned from loading %s: %s", ob.GetLink(), cmp.Diff(ob, loadIt))
 			}
-			savedItems = append(savedItems, loadIt)
-		}
-		// NOTE(marius): check item collections
-		if !randomObjects.Equal(savedItems) {
-			t.Errorf("invalid items returned from loading: %s", cmp.Diff(randomObjects, savedItems, EquateItemCollections))
 		}
 	})
 
@@ -377,6 +376,13 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 			})
 		}
 	})
+}
+
+func flatCopyForSave(ob vocab.Item) vocab.Item {
+	if vocab.IsLink(ob) {
+		return ob
+	}
+	return vocab.FlattenProperties(vocab.Clone(ob))
 }
 
 func colLabel(typ vocab.Typer) string {
