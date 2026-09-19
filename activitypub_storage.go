@@ -231,7 +231,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 
 		t.Run(fmt.Sprintf("add %d items to %s", randomObjects.Count(), colType), func(t *testing.T) {
 			if err = storage.AddTo(colIRI, randomObjects...); err != nil {
-				t.Errorf("unable to add objects to %s: %v", err, colType)
+				t.Errorf("unable to add objects to %s: %v", colType, err)
 			}
 			loadedIt, err := storage.Load(colIRI)
 			if err != nil {
