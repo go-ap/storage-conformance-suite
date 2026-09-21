@@ -221,12 +221,12 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 		if !cmp.Equal(col, savedIt) {
 			t.Errorf("invalid %s returned from saving %s", colType, cmp.Diff(col, savedIt))
 		}
-		loadIt, err := storage.Load(colIRI)
+		emptyCol, err := storage.Load(colIRI)
 		if err != nil {
 			t.Errorf("unable to load %s %s: %v", colType, colIRI, err)
 		}
-		if !cmp.Equal(col, loadIt) {
-			t.Errorf("invalid %s returned from loading %s: %s", colType, colIRI, cmp.Diff(col, loadIt))
+		if !cmp.Equal(col, emptyCol) {
+			t.Errorf("invalid %s returned from loading %s: %s", colType, colIRI, cmp.Diff(col, emptyCol))
 		}
 
 		t.Run(fmt.Sprintf("add %d items to %s", randomObjects.Count(), colType), func(t *testing.T) {
@@ -257,13 +257,13 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 		queryFilters := append(withPagination, append(byTypeFilters, byActivityObjectTypeFilters...)...)
 		for _, fil := range queryFilters {
 			t.Run(fmt.Sprintf("query %s with filters %#v", colType, fil), func(t *testing.T) {
-				loadIt, err = storage.Load(colIRI, fil...)
+				emptyCol, err = storage.Load(colIRI, fil...)
 				if err != nil {
 					t.Errorf("unable to load %s %s: %v", colType, colIRI, err)
 				}
 				var foundItems vocab.ItemCollection
 				var totalItems uint
-				err = vocab.OnOrderedCollection(loadIt, func(col *vocab.OrderedCollection) error {
+				err = vocab.OnOrderedCollection(emptyCol, func(col *vocab.OrderedCollection) error {
 					foundItems = col.OrderedItems
 					totalItems = col.TotalItems
 					return nil
