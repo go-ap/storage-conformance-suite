@@ -309,7 +309,6 @@ func RandomTombstone(attrTo vocab.LinkOrIRI) vocab.Item {
 }
 
 func setContentByType(typ vocab.ActivityVocabularyType) func(ob *vocab.Object) error {
-	var mt vocab.MimeType
 	var data []byte
 	if typ == "-" {
 		data = getRandomContent()
@@ -317,25 +316,28 @@ func setContentByType(typ vocab.ActivityVocabularyType) func(ob *vocab.Object) e
 		data = getContentByType(typ)
 	}
 	return func(ob *vocab.Object) error {
-		typ, mt = getObjectTypes(data)
-
-		ob.Type = typ
-		ob.MediaType = mt
-
-		if len(data) == 0 {
-			ob.Content = vocab.DefaultLangValue("no data")
-		} else {
-			if !strings.Contains(string(mt), "text") {
-				buf := make([]byte, base64.RawStdEncoding.EncodedLen(len(data)))
-				base64.RawStdEncoding.Encode(buf, data)
-				data = buf
-			} else {
-				ob.Summary = vocab.DefaultLangValue(string(data[:bytes.Index(data, []byte{'.'})]))
-			}
-			ob.Content = vocab.DefaultLangValue(string(data))
-		}
-		return nil
+		return setContentData(ob, data)
 	}
+}
+
+func setContentData(ob *vocab.Object, data []byte) error {
+	typ, mt := getObjectTypes(data)
+	ob.MediaType = mt
+	ob.Type = typ
+
+	if len(data) == 0 {
+		ob.Content = vocab.DefaultLangValue("no data")
+	} else {
+		if !strings.Contains(string(mt), "text") {
+			buf := make([]byte, base64.RawStdEncoding.EncodedLen(len(data)))
+			base64.RawStdEncoding.Encode(buf, data)
+			data = buf
+		} else {
+			ob.Summary = vocab.DefaultLangValue(string(data[:bytes.Index(data, []byte{'.'})]))
+		}
+		ob.Content = vocab.DefaultLangValue(string(data))
+	}
+	return nil
 }
 
 func RandomTags(parent vocab.LinkOrIRI, cnt int) vocab.ItemCollection {

@@ -172,7 +172,7 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				t.Errorf("unable to save object: %s", err)
 			}
 			if !cmp.Equal(flat, savedIt) {
-				t.Errorf("invalid object returned from saving %s", cmp.Diff(ob, savedIt))
+				t.Errorf("invalid object returned from saving %s", cmp.Diff(flat, savedIt))
 			}
 		}
 		// NOTE(marius): check saved items _after_ we saved everything, this allows the storage backend to have
@@ -359,6 +359,34 @@ func RunActivityPubTests(t *testing.T, storage ActivityPubStorage) {
 				t.Errorf("loaded object wasn't a(n) %s %s: %v", colType, colIRI, err)
 			}
 		})
+	})
+
+	t.Run(fmt.Sprintf("update %d random objects", len(randomObjects)), func(t *testing.T) {
+		for _, ob := range randomObjects {
+			iri := string(ob.GetLink())
+			t.Run(fmt.Sprintf("update random item %s", iri), func(t *testing.T) {
+				updateOb := gen.UpdateItem(ob)
+				if cmp.Equal(updateOb, ob) {
+					t.Errorf("updated object is not different %s", cmp.Diff(ob, updateOb))
+					return
+				}
+				flat := flatCopyForSave(updateOb)
+				updatedIt, err := storage.Save(flat)
+				if err != nil {
+					t.Errorf("unable to save object: %s", err)
+				}
+				if !cmp.Equal(flat, updatedIt) {
+					t.Errorf("invalid object returned from saving %s", cmp.Diff(flat, updatedIt))
+				}
+				loadIt, err := storage.Load(ob.GetLink())
+				if err != nil && !errors.IsNotFound(err) {
+					t.Errorf("unable to load object %s: %s", ob.GetLink(), err)
+				}
+				if !cmp.Equal(flat, updatedIt) {
+					t.Errorf("invalid updated object returned after loading %s", cmp.Diff(flat, loadIt))
+				}
+			})
+		}
 	})
 
 	t.Run(fmt.Sprintf("delete %d random objects", len(randomObjects)), func(t *testing.T) {
