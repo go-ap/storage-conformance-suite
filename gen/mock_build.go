@@ -354,16 +354,25 @@ func RandomObject(attrTo vocab.LinkOrIRI) vocab.Item {
 	_ = vocab.OnObject(ob, setContentByType("-"))
 	SetItemID(ob)
 	ob.Audience = publicAudience
-
 	SetObjectCollections(ob)
 
 	return ob
 }
 
+func randPercent(p int) bool {
+	return rand.Int31n(101) > int32(100-p)
+}
+
 func SetObjectCollections(ob *vocab.Object) error {
-	ob.Replies = vocab.Replies.IRI(ob)
-	ob.Likes = vocab.Likes.IRI(ob)
-	ob.Shares = vocab.Shares.IRI(ob)
+	if randPercent(50) {
+		ob.Replies = vocab.Replies.IRI(ob)
+	}
+	if randPercent(50) {
+		ob.Likes = vocab.Likes.IRI(ob)
+	}
+	if randPercent(50) {
+		ob.Shares = vocab.Shares.IRI(ob)
+	}
 	return nil
 }
 
@@ -559,13 +568,17 @@ func RandomActor(attrTo vocab.LinkOrIRI) vocab.Item {
 
 	act.Inbox = vocab.Inbox.IRI(act)
 	act.Outbox = vocab.Outbox.IRI(act)
-	act.Following = vocab.Following.IRI(act)
-	act.Followers = vocab.Followers.IRI(act)
-	act.Liked = vocab.Liked.IRI(act)
+	if randPercent(60) {
+		act.Following = vocab.Following.IRI(act)
+	}
+	if randPercent(60) {
+		act.Followers = vocab.Followers.IRI(act)
+	}
+	if randPercent(20) {
+		act.Liked = vocab.Liked.IRI(act)
+	}
 
-	act.Shares = vocab.Shares.IRI(act)
-	act.Replies = vocab.Replies.IRI(act)
-	act.Likes = vocab.Likes.IRI(act)
+	vocab.OnObject(act, SetObjectCollections)
 
 	return act
 }
@@ -625,6 +638,7 @@ func RandomImage(mime vocab.MimeType, parent vocab.Item) vocab.Item {
 	base64.RawStdEncoding.Encode(buf, data)
 	img.Content = vocab.DefaultLangValue(string(buf))
 	SetItemID(img)
+	SetObjectCollections(img)
 	return img
 }
 
