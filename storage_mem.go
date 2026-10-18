@@ -35,8 +35,8 @@ func errf(s string, arg ...any) memStorageError {
 var errNotImplemented = errf("not implemented")
 var errNilStorage = errf("nil storage")
 
-type memStorage struct {
-	*sync.Map
+type MemStorage struct {
+	sync.Map
 }
 
 func asBytes(s any) []byte {
@@ -59,7 +59,7 @@ var (
 	allCollectionTypes = append(collectionTypes, orderedCollectionTypes...)
 )
 
-func (ms *memStorage) Load(i vocab.IRI, checks ...filters.Check) (vocab.Item, error) {
+func (ms *MemStorage) Load(i vocab.IRI, checks ...filters.Check) (vocab.Item, error) {
 	raw, ok := ms.Map.Load(i)
 	if !ok {
 		return nil, errors.NotFoundf("unable to find %s", i)
@@ -102,7 +102,7 @@ func (ms *memStorage) Load(i vocab.IRI, checks ...filters.Check) (vocab.Item, er
 	return filters.Checks(checks).Run(it), err
 }
 
-func loadFilteredPropsForIntransitiveActivity(ms *memStorage, checks ...filters.Check) vocab.WithIntransitiveActivityFn {
+func loadFilteredPropsForIntransitiveActivity(ms *MemStorage, checks ...filters.Check) vocab.WithIntransitiveActivityFn {
 	targetChecks := filters.TargetChecks(checks...)
 	actorChecks := filters.ActorChecks(checks...)
 	return func(a *vocab.IntransitiveActivity) error {
@@ -121,7 +121,7 @@ func loadFilteredPropsForIntransitiveActivity(ms *memStorage, checks ...filters.
 	}
 }
 
-func loadFilteredPropsForActivity(ms *memStorage, checks ...filters.Check) vocab.WithActivityFn {
+func loadFilteredPropsForActivity(ms *MemStorage, checks ...filters.Check) vocab.WithActivityFn {
 	objectChecks := filters.ObjectChecks(checks...)
 	return func(a *vocab.Activity) error {
 		if !vocab.IsNil(a.Object) && !a.ID.Equal(a.Object.GetLink()) {
@@ -134,13 +134,13 @@ func loadFilteredPropsForActivity(ms *memStorage, checks ...filters.Check) vocab
 	}
 }
 
-func loadFilteredPropsForActor(ms *memStorage, checks ...filters.Check) vocab.WithActorFn {
+func loadFilteredPropsForActor(ms *MemStorage, checks ...filters.Check) vocab.WithActorFn {
 	return func(actor *vocab.Actor) error {
 		return vocab.OnObject(actor, loadFilteredPropsForObject(ms, checks...))
 	}
 }
 
-func loadFilteredPropsForObject(ms *memStorage, fil ...filters.Check) func(o *vocab.Object) error {
+func loadFilteredPropsForObject(ms *MemStorage, fil ...filters.Check) func(o *vocab.Object) error {
 	tagChecks := filters.TagChecks(fil...)
 	if len(tagChecks) == 0 {
 		tagChecks = filters.Checks{filters.NoType}
@@ -155,7 +155,7 @@ func loadFilteredPropsForObject(ms *memStorage, fil ...filters.Check) func(o *vo
 	}
 }
 
-func dereferenceItemAndFilter(ms *memStorage, it vocab.Item, checks ...filters.Check) (vocab.Item, error) {
+func dereferenceItemAndFilter(ms *MemStorage, it vocab.Item, checks ...filters.Check) (vocab.Item, error) {
 	if vocab.IsNil(it) {
 		return it, nil
 	}
@@ -183,7 +183,7 @@ func dereferenceItemAndFilter(ms *memStorage, it vocab.Item, checks ...filters.C
 	return res.Normalize(), err
 }
 
-func saveCollectionIfExists(r *memStorage, it, owner vocab.Item) vocab.Item {
+func saveCollectionIfExists(r *MemStorage, it, owner vocab.Item) vocab.Item {
 	if vocab.IsNil(it) {
 		return nil
 	}
@@ -205,7 +205,7 @@ func createNewCollection(colIRI vocab.IRI, owner vocab.Item) vocab.CollectionInt
 }
 
 // createItemCollections
-func createItemCollections(ms *memStorage, it vocab.Item) error {
+func createItemCollections(ms *MemStorage, it vocab.Item) error {
 	if vocab.IsNil(it) || !vocab.IsObject(it) {
 		return nil
 	}
@@ -230,7 +230,7 @@ func createItemCollections(ms *memStorage, it vocab.Item) error {
 	})
 }
 
-func (ms *memStorage) Save(it vocab.Item) (vocab.Item, error) {
+func (ms *MemStorage) Save(it vocab.Item) (vocab.Item, error) {
 	if _, ok := ms.Map.Load(it.GetLink()); !ok {
 		if err := createItemCollections(ms, it); err != nil {
 			return it, errors.Annotatef(err, "could not create object's collections")
@@ -240,12 +240,12 @@ func (ms *memStorage) Save(it vocab.Item) (vocab.Item, error) {
 	return it, nil
 }
 
-func (ms *memStorage) Delete(it vocab.Item) error {
+func (ms *MemStorage) Delete(it vocab.Item) error {
 	ms.Map.Delete(it.GetLink())
 	return nil
 }
 
-func (ms *memStorage) Create(col vocab.CollectionInterface) (vocab.CollectionInterface, error) {
+func (ms *MemStorage) Create(col vocab.CollectionInterface) (vocab.CollectionInterface, error) {
 	it, err := ms.Save(col)
 	if err != nil {
 		return nil, err
@@ -257,7 +257,7 @@ func (ms *memStorage) Create(col vocab.CollectionInterface) (vocab.CollectionInt
 	return col, nil
 }
 
-func (ms *memStorage) loadCol(colIRI vocab.IRI) (vocab.CollectionInterface, error) {
+func (ms *MemStorage) loadCol(colIRI vocab.IRI) (vocab.CollectionInterface, error) {
 	it, ok := ms.Map.Load(colIRI)
 	if !ok {
 		return nil, errors.NotFoundf("unable to load collection %s", colIRI)
@@ -269,7 +269,7 @@ func (ms *memStorage) loadCol(colIRI vocab.IRI) (vocab.CollectionInterface, erro
 	return col, nil
 }
 
-func (ms *memStorage) AddTo(colIRI vocab.IRI, items ...vocab.Item) error {
+func (ms *MemStorage) AddTo(colIRI vocab.IRI, items ...vocab.Item) error {
 	col, err := ms.loadCol(colIRI)
 	if err != nil {
 		return err
@@ -283,7 +283,7 @@ func (ms *memStorage) AddTo(colIRI vocab.IRI, items ...vocab.Item) error {
 	return err
 }
 
-func (ms *memStorage) RemoveFrom(colIRI vocab.IRI, items ...vocab.Item) error {
+func (ms *MemStorage) RemoveFrom(colIRI vocab.IRI, items ...vocab.Item) error {
 	col, err := ms.loadCol(colIRI)
 	if err != nil {
 		return err
@@ -299,17 +299,17 @@ func clientPath(clientID string) string {
 	return filepath.Join("oauth", "clients", clientID)
 }
 
-func (ms *memStorage) SaveClient(c osin.Client) error {
+func (ms *MemStorage) SaveClient(c osin.Client) error {
 	ms.Map.Store(clientPath(c.GetId()), c)
 	return nil
 }
 
-func (ms *memStorage) RemoveClient(id string) error {
+func (ms *MemStorage) RemoveClient(id string) error {
 	ms.Map.Delete(clientPath(id))
 	return nil
 }
 
-func (ms *memStorage) ListClients() ([]osin.Client, error) {
+func (ms *MemStorage) ListClients() ([]osin.Client, error) {
 	clients := make([]osin.Client, 0)
 	ms.Map.Range(func(key, value any) bool {
 		path, ok := key.(string)
@@ -325,14 +325,14 @@ func (ms *memStorage) ListClients() ([]osin.Client, error) {
 	return clients, nil
 }
 
-func (ms *memStorage) Clone() osin.Storage {
+func (ms *MemStorage) Clone() osin.Storage {
 	return ms
 }
 
-func (ms *memStorage) Close() {
+func (ms *MemStorage) Close() {
 }
 
-func (ms *memStorage) GetClient(id string) (osin.Client, error) {
+func (ms *MemStorage) GetClient(id string) (osin.Client, error) {
 	val, ok := ms.Map.Load(clientPath(id))
 	if !ok {
 		return nil, errors.NotFoundf("client not found %s", id)
@@ -348,12 +348,12 @@ func authorizePath(code string) string {
 	return filepath.Join("oauth", "authorize", code)
 }
 
-func (ms *memStorage) SaveAuthorize(data *osin.AuthorizeData) error {
+func (ms *MemStorage) SaveAuthorize(data *osin.AuthorizeData) error {
 	ms.Map.Store(authorizePath(data.Code), data)
 	return nil
 }
 
-func (ms *memStorage) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
+func (ms *MemStorage) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
 	val, ok := ms.Map.Load(authorizePath(code))
 	if !ok {
 		return nil, errors.NotFoundf("authorization data not found %s", code)
@@ -365,7 +365,7 @@ func (ms *memStorage) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
 	return auth, nil
 }
 
-func (ms *memStorage) RemoveAuthorize(code string) error {
+func (ms *MemStorage) RemoveAuthorize(code string) error {
 	ms.Map.Delete(authorizePath(code))
 	return nil
 }
@@ -374,7 +374,7 @@ func accessPath(token string) string {
 	return filepath.Join("oauth", "access", token)
 }
 
-func (ms *memStorage) SaveAccess(data *osin.AccessData) error {
+func (ms *MemStorage) SaveAccess(data *osin.AccessData) error {
 	ms.Map.Store(accessPath(data.AccessToken), data)
 	if data.RefreshToken != "" {
 		ms.Map.Store(refreshPath(data.RefreshToken), data.AccessToken)
@@ -382,7 +382,7 @@ func (ms *memStorage) SaveAccess(data *osin.AccessData) error {
 	return nil
 }
 
-func (ms *memStorage) LoadAccess(token string) (*osin.AccessData, error) {
+func (ms *MemStorage) LoadAccess(token string) (*osin.AccessData, error) {
 	val, ok := ms.Map.Load(accessPath(token))
 	if !ok {
 		return nil, errors.NotFoundf("access data not found %s", token)
@@ -394,7 +394,7 @@ func (ms *memStorage) LoadAccess(token string) (*osin.AccessData, error) {
 	return access, nil
 }
 
-func (ms *memStorage) RemoveAccess(token string) error {
+func (ms *MemStorage) RemoveAccess(token string) error {
 	exists, _ := ms.LoadAccess(token)
 	ms.Map.Delete(accessPath(token))
 	if exists != nil && exists.RefreshToken != "" {
@@ -407,7 +407,7 @@ func refreshPath(token string) string {
 	return filepath.Join("oauth", "refresh", token)
 }
 
-func (ms *memStorage) LoadRefresh(token string) (*osin.AccessData, error) {
+func (ms *MemStorage) LoadRefresh(token string) (*osin.AccessData, error) {
 	val, ok := ms.Map.Load(refreshPath(token))
 	if !ok {
 		return nil, errors.NotFoundf("refresh data not found %s", token)
@@ -419,12 +419,12 @@ func (ms *memStorage) LoadRefresh(token string) (*osin.AccessData, error) {
 	return ms.LoadAccess(token)
 }
 
-func (ms *memStorage) RemoveRefresh(token string) error {
+func (ms *MemStorage) RemoveRefresh(token string) error {
 	ms.Map.Delete(refreshPath(token))
 	return nil
 }
 
-func (ms *memStorage) LoadKey(iri vocab.IRI) (crypto.PrivateKey, error) {
+func (ms *MemStorage) LoadKey(iri vocab.IRI) (crypto.PrivateKey, error) {
 	privateKeyKey := iri.GetLink().AddPath("privateKey")
 	prvKey, ok := ms.Map.Load(privateKeyKey)
 	if !ok {
@@ -433,7 +433,7 @@ func (ms *memStorage) LoadKey(iri vocab.IRI) (crypto.PrivateKey, error) {
 	return prvKey, nil
 }
 
-func (ms *memStorage) SaveKey(iri vocab.IRI, key crypto.PrivateKey) (*vocab.PublicKey, error) {
+func (ms *MemStorage) SaveKey(iri vocab.IRI, key crypto.PrivateKey) (*vocab.PublicKey, error) {
 	privateKeyKey := iri.GetLink().AddPath("privateKey")
 	ms.Map.Store(privateKeyKey, key)
 
@@ -466,7 +466,7 @@ func (ms *memStorage) SaveKey(iri vocab.IRI, key crypto.PrivateKey) (*vocab.Publ
 	}, nil
 }
 
-func (ms *memStorage) PasswordSet(iri vocab.IRI, pw []byte) error {
+func (ms *MemStorage) PasswordSet(iri vocab.IRI, pw []byte) error {
 	privateKeyKey := iri.GetLink().AddPath("__password")
 	hashed, err := bcrypt.GenerateFromPassword(pw, bcrypt.MinCost)
 	if err != nil {
@@ -476,7 +476,7 @@ func (ms *memStorage) PasswordSet(iri vocab.IRI, pw []byte) error {
 	return nil
 }
 
-func (ms *memStorage) PasswordCheck(iri vocab.IRI, pw []byte) error {
+func (ms *MemStorage) PasswordCheck(iri vocab.IRI, pw []byte) error {
 	pwKey := iri.GetLink().AddPath("__password")
 	pwAny, ok := ms.Map.Load(pwKey)
 	if !ok {
@@ -488,7 +488,7 @@ func (ms *memStorage) PasswordCheck(iri vocab.IRI, pw []byte) error {
 	return nil
 }
 
-func (ms *memStorage) LoadMetadata(iri vocab.IRI, m any) error {
+func (ms *MemStorage) LoadMetadata(iri vocab.IRI, m any) error {
 	metaKey := iri.GetLink().AddPath("__meta")
 	metaAny, ok := ms.Map.Load(metaKey)
 	if !ok {
@@ -498,19 +498,19 @@ func (ms *memStorage) LoadMetadata(iri vocab.IRI, m any) error {
 	return nil
 }
 
-func (ms *memStorage) SaveMetadata(iri vocab.IRI, m any) error {
+func (ms *MemStorage) SaveMetadata(iri vocab.IRI, m any) error {
 	metaKey := iri.GetLink().AddPath("__meta")
 	ms.Map.Store(metaKey, m)
 	return nil
 }
 
-var _ ActivityPubStorage = &memStorage{}
-var _ MetadataStorage = &memStorage{}
-var _ PasswordStorage = &memStorage{}
-var _ KeyStorage = &memStorage{}
-var _ OSINStorage = &memStorage{}
-var _ ClientLister = &memStorage{}
-var _ ClientSaver = &memStorage{}
+var _ ActivityPubStorage = &MemStorage{}
+var _ MetadataStorage = &MemStorage{}
+var _ PasswordStorage = &MemStorage{}
+var _ KeyStorage = &MemStorage{}
+var _ OSINStorage = &MemStorage{}
+var _ ClientLister = &MemStorage{}
+var _ ClientSaver = &MemStorage{}
 
 // copy copies from one instance of type T to another
 func copyT[T any](from, to T) {

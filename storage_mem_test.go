@@ -1,12 +1,11 @@
 package conformance
 
 import (
-	"sync"
 	"testing"
 )
 
 func initStorage(_ *testing.T) ActivityPubStorage {
-	storage := &memStorage{Map: new(sync.Map)}
+	storage := new(MemStorage)
 	return storage
 }
 
