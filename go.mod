@@ -3,9 +3,9 @@ module github.com/go-ap/storage-conformance-suite
 go 1.26.0
 
 require (
-	github.com/go-ap/activitypub v0.0.0-20261114094942-b164c2575fd9
+	github.com/go-ap/activitypub v0.0.0-20261117195929-f28d9e613601
 	github.com/go-ap/errors v0.0.0-20261107170344-5391268d9d2c
-	github.com/go-ap/filters v0.0.0-20261114095223-5acde6d8785c
+	github.com/go-ap/filters v0.0.0-20261120081820-5ee59de928b0
 	github.com/google/go-cmp v0.7.0
 	github.com/openshift/osin v1.0.2-0.20220317075346-0f4d38c6e53f
 	golang.org/x/crypto v0.59.0
@@ -15,7 +15,7 @@ require (
 require (
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
-	github.com/bits-and-blooms/bitset v1.29.0 // indirect
+	github.com/bits-and-blooms/bitset v1.30.0 // indirect
 	github.com/go-ap/jsonld v0.0.0-20261107170435-a7bb5ba3f894 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gotesttools/gotestfmt/v2 v2.5.0 // indirect
